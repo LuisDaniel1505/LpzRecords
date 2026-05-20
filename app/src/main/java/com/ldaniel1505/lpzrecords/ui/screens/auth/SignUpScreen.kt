@@ -20,7 +20,7 @@ import com.ldaniel1505.lpzrecords.ui.theme.*
 @Composable
 fun SignUpScreen(
     onNavigateToLogin: () -> Unit,
-    onSignUpSuccess: () -> Unit // Añadido por si quieres mandarlo al Home al registrarse
+    onSignUpSuccess: () -> Unit
 ) {
     // --- ESTADOS PARA EL BACKEND ---
     var username by remember { mutableStateOf("") }
