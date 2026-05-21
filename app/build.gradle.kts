@@ -1,7 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+
+
+    alias(libs.plugins.kotlinx.serialization)
 }
+
 
 android {
     namespace = "com.ldaniel1505.lpzrecords"
@@ -38,6 +42,17 @@ android {
 }
 
 dependencies {
+    //Implementaciones para la base de datos SUPABASE
+    // Supabase y módulos necesarios
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.5.0")   // Maneja el Login/Registro
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.5.0") // Maneja las tablas (usuarios, productos)
+
+    // Motor de Red para Android (Ktor)
+    implementation("io.ktor:ktor-client-android:2.3.7")
+
+    // Serialización (Para convertir JSON a objetos Kotlin fácilmente)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

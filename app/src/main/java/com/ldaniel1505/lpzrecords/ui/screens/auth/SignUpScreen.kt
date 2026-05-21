@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,6 +27,10 @@ fun SignUpScreen(
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    fun isValidEmail (email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
 
     Surface(
         color = LpzBeige,
@@ -88,14 +93,15 @@ fun SignUpScreen(
                         value = username,
                         onValueChange = { username = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        textStyle = TextStyle(color = Color.Black),
                         placeholder = { Text("Nombre", color = Color.Gray) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
+                            unfocusedIndicatorColor = Color.Transparent,
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -112,6 +118,7 @@ fun SignUpScreen(
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        textStyle = TextStyle(color = Color.Black),
                         placeholder = { Text("correo@gmail.com", color = Color.Gray) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
@@ -136,6 +143,7 @@ fun SignUpScreen(
                         value = password,
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        textStyle = TextStyle(color = Color.Black),
                         placeholder = { Text("••••••••••••", color = Color.Gray) },
                         visualTransformation = PasswordVisualTransformation(),
                         colors = TextFieldDefaults.colors(
