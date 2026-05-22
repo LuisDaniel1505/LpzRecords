@@ -1,0 +1,456 @@
+package com.ldaniel1505.lpzrecords.ui.screens.account
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.ui.theme.*
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODELO DE DATOS
+//  TODO (BACKEND): Mover a data/model/PaymentCard.kt cuando el backend esté listo.
+//  IMPORTANTE: Nunca guardar el número completo de tarjeta en el cliente.
+//  Solo almacenar los últimos 4 dígitos y el token del proveedor de pagos.
+// ═══════════════════════════════════════════════════════════════════════════
+
+data class PaymentCard(
+    val id: Int,
+    val cardHolder: String,
+    val lastFourDigits: String,   // Solo los últimos 4 dígitos
+    val expiryDate: String,       // Formato "MM/YY"
+    val network: CardNetwork
+)
+
+enum class CardNetwork(val displayName: String) {
+    VISA("VISA"),
+    MASTERCARD("MASTERCARD"),
+    AMEX("AMEX"),
+    OTHER("- - -")
+}
+
+// ── Datos de ejemplo — eliminar cuando el ViewModel provea datos reales ──────
+private val sampleCards = listOf(
+    PaymentCard(
+        id             = 1,
+        cardHolder     = "Luis D. Ontiveros",
+        lastFourDigits = "1234",
+        expiryDate     = "12/28",
+        network        = CardNetwork.VISA
+    )
+)
+
+// ── Formatea el número de tarjeta enmascarado ─────────────────────────────────
+private fun String.toMaskedCardNumber(): String = "•••• •••• ••••  $this"
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PANTALLA PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun PaymentMethodsScreen(
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToSearch: () -> Unit = {},
+    onNavigateToCart: () -> Unit = {},
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {}
+) {
+    // TODO (BACKEND): Cargar tarjetas guardadas del usuario desde el ViewModel.
+    // val uiState by paymentViewModel.uiState.collectAsState()
+    // val cards   = uiState.cards
+    val cards = sampleCards
+
+    // Controla cuál tarjeta está pendiente de eliminar
+    var cardToDelete by remember { mutableStateOf<PaymentCard?>(null) }
+
+    // ── Diálogo de confirmación de eliminación ─────────────────────────
+    if (cardToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { cardToDelete = null },
+            containerColor   = Color.White,
+            title = {
+                Text(
+                    text       = "Eliminar tarjeta",
+                    fontWeight = FontWeight.Bold,
+                    color      = LpzDark
+                )
+            },
+            text = {
+                Text(
+                    text     = "¿Deseas eliminar la tarjeta terminada en ${cardToDelete?.lastFourDigits}?",
+                    color    = LpzDark.copy(alpha = 0.75f),
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // TODO (BACKEND): paymentViewModel.deleteCard(cardToDelete!!.id)
+                    cardToDelete = null
+                }) {
+                    Text("Eliminar", color = LpzRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { cardToDelete = null }) {
+                    Text("Cancelar", color = LpzDark.copy(alpha = 0.6f))
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = { PaymentMethodsTopBar() },
+        bottomBar = {
+            PaymentMethodsBottomBar(
+                onHome      = onNavigateToHome,
+                onSearch    = onNavigateToSearch,
+                onCart      = onNavigateToCart,
+                onFavorites = onNavigateToFavorites,
+                onProfile   = onNavigateToProfile
+            )
+        },
+        containerColor = LpzBeige
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 24.dp)
+        ) {
+            // ── Tarjetas guardadas ─────────────────────────────────────
+            items(cards, key = { it.id }) { card ->
+                CreditCardVisual(
+                    card     = card,
+                    onDelete = { cardToDelete = card }
+                )
+            }
+
+            // ── Estado vacío (visible solo si no hay tarjetas) ─────────
+            if (cards.isEmpty()) {
+                item {
+                    Box(
+                        modifier         = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text     = "No tienes tarjetas guardadas",
+                            fontSize = 15.sp,
+                            color    = LpzDark.copy(alpha = 0.45f)
+                        )
+                    }
+                }
+            }
+
+            // ── Botón añadir tarjeta ───────────────────────────────────
+            item {
+                AddCardButton(
+                    onClick = {
+                        // TODO (BACKEND): Navegar a pantalla de nueva tarjeta
+                        // navController.navigate(Screen.NewCard.route)
+                    }
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  COMPONENTE: Tarjeta de crédito/débito visual
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Renderiza la tarjeta como un widget visual fiel a una tarjeta física.
+ * Aspect ratio estándar de tarjeta bancaria: 85.6mm / 53.98mm ≈ 1.586
+ *
+ * La información sensible se muestra enmascarada — solo los últimos 4 dígitos.
+ */
+@Composable
+private fun CreditCardVisual(
+    card: PaymentCard,
+    onDelete: () -> Unit
+) {
+    val cardGradient = Brush.linearGradient(
+        colors = listOf(Color(0xFF1C1C1C), Color(0xFF2E2E2E))
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // ── Visual de la tarjeta ───────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.586f)
+                .clip(RoundedCornerShape(18.dp))
+                .background(brush = cardGradient)
+                .padding(22.dp)
+        ) {
+            // ── Nombre de la red (VISA, MASTERCARD…) ──────────────────
+            Text(
+                text       = card.network.displayName,
+                modifier   = Modifier.align(Alignment.TopEnd),
+                color      = Color.White,
+                fontSize   = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontStyle  = FontStyle.Italic
+            )
+
+            // ── Número enmascarado ─────────────────────────────────────
+            Text(
+                text       = card.lastFourDigits.toMaskedCardNumber(),
+                modifier   = Modifier.align(Alignment.Center),
+                color      = Color.White,
+                fontSize   = 19.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 2.sp
+            )
+
+            // ── Fila inferior: Titular + Vence ─────────────────────────
+            Row(
+                modifier              = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.Bottom
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text          = "TITULAR",
+                        fontSize      = 9.sp,
+                        color         = Color.White.copy(alpha = 0.55f),
+                        letterSpacing = 1.sp,
+                        fontWeight    = FontWeight.Medium
+                    )
+                    Text(
+                        // TODO (BACKEND): card.cardHolder vendrá del objeto User autenticado
+                        text       = card.cardHolder,
+                        fontSize   = 13.sp,
+                        color      = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+                Column(
+                    horizontalAlignment   = Alignment.End,
+                    verticalArrangement   = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text          = "VENCE",
+                        fontSize      = 9.sp,
+                        color         = Color.White.copy(alpha = 0.55f),
+                        letterSpacing = 1.sp,
+                        fontWeight    = FontWeight.Medium
+                    )
+                    Text(
+                        // TODO (BACKEND): card.expiryDate vendrá cifrado desde el servidor
+                        text       = card.expiryDate,
+                        fontSize   = 13.sp,
+                        color      = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
+        }
+
+        // ── Acción eliminar debajo de la tarjeta ───────────────────────
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text       = "ELIMINAR",
+                fontSize   = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color      = LpzDark.copy(alpha = 0.45f),
+                letterSpacing = 0.5.sp,
+                modifier   = Modifier
+                    .clickable(onClick = onDelete)
+                    .padding(vertical = 4.dp, horizontal = 2.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Botón con borde discontinuo para añadir una nueva tarjeta.
+ * Mismo tratamiento visual que en AddressesScreen para coherencia de diseño.
+ */
+@Composable
+private fun AddCardButton(onClick: () -> Unit) {
+    val dashedColor = LpzDark.copy(alpha = 0.28f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .drawBehind {
+                val strokePx   = 1.5.dp.toPx()
+                val dashPx     = 12.dp.toPx()
+                val gapPx      = 6.dp.toPx()
+                val pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashPx, gapPx), 0f)
+                drawRoundRect(
+                    color        = dashedColor,
+                    style        = Stroke(width = strokePx, pathEffect = pathEffect),
+                    cornerRadius = CornerRadius(14.dp.toPx())
+                )
+            }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text          = "+ AÑADIR TARJETA",
+            fontSize      = 15.sp,
+            fontWeight    = FontWeight.Medium,
+            color         = LpzDark.copy(alpha = 0.58f),
+            letterSpacing = 0.5.sp
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TOP BAR
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PaymentMethodsTopBar() {
+    TopAppBar(
+        title = {
+            Box(
+                modifier         = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text       = "TARJETAS",
+                    fontSize   = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = LpzDark
+                )
+            }
+        },
+        actions = {
+            Icon(
+                painter            = painterResource(id = R.drawable.vinyl),
+                contentDescription = "Logo LPZ Records",
+                modifier           = Modifier
+                    .padding(end = 16.dp)
+                    .size(32.dp),
+                tint = Color.Unspecified
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = LpzBeige)
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BOTTOM NAVIGATION BAR
+//  "Perfil" permanece resaltado al ser una subpantalla del módulo de cuenta.
+//  TODO: Extraer a ui/components/LpzBottomNavBar.kt junto con las demás pantallas.
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun PaymentMethodsBottomBar(
+    onHome: () -> Unit,
+    onSearch: () -> Unit,
+    onCart: () -> Unit,
+    onFavorites: () -> Unit,
+    onProfile: () -> Unit
+) {
+    Surface(
+        color           = LpzBeige,
+        shadowElevation = 12.dp,
+        tonalElevation  = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(68.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            BottomNavItem(icon = Icons.Default.Home,           label = "Inicio",    isSelected = false, onClick = onHome)
+            BottomNavItem(icon = Icons.Default.Search,         label = "Buscar",    isSelected = false, onClick = onSearch)
+
+            // ── Botón central del carrito ──────────────────────────────
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(LpzRed)
+                    .clickable(onClick = onCart),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector        = Icons.Default.ShoppingCart,
+                    contentDescription = "Carrito de compras",
+                    tint               = Color.White,
+                    modifier           = Modifier.size(24.dp)
+                )
+            }
+
+            BottomNavItem(icon = Icons.Default.FavoriteBorder, label = "Favoritos", isSelected = false, onClick = onFavorites)
+            BottomNavItem(icon = Icons.Default.Person,         label = "Perfil",    isSelected = true,  onClick = onProfile)
+        }
+    }
+}
+
+@Composable
+private fun BottomNavItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val tint = if (isSelected) LpzRed else LpzDark
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
+        Text(text = label, fontSize = 10.sp, color = tint, fontWeight = FontWeight.Medium)
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PREVIEW
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun PaymentMethodsScreenPreview() {
+    PaymentMethodsScreen()
+}
