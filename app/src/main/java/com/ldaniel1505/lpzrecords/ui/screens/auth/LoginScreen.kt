@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -101,6 +102,7 @@ fun LoginScreen(
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         placeholder = { Text("correo@gmail.com", color = Color.Gray) },
+                        textStyle = TextStyle(color = Color.Black),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
@@ -125,6 +127,7 @@ fun LoginScreen(
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         placeholder = { Text("••••••••••••", color = Color.Gray) },
+                        textStyle = TextStyle(color = Color.Black),
                         visualTransformation = PasswordVisualTransformation(),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
@@ -132,6 +135,7 @@ fun LoginScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
+
                         shape = RoundedCornerShape(8.dp)
                     )
 

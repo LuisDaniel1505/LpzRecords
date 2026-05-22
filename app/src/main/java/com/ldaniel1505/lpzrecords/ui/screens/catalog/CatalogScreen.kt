@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -32,14 +31,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.data.model.Product
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MODELO DE DATOS
 //  TODO (BACKEND): Mover a data/model/Product.kt cuando el backend esté listo.
 //  Reemplazar [placeholderColor] con [imageUrl: String]
 // ═══════════════════════════════════════════════════════════════════════════
+
+/*
+
+    //Ya no se usa, se usa el modelo Product
 
 data class ProductItem(
     val id: Int,
@@ -49,16 +55,10 @@ data class ProductItem(
     val placeholderColor: Color, // TODO (BACKEND): Cambiar a imageUrl: String
     val isFavorite: Boolean = false
 )
+*/
 
 // ── Datos de ejemplo — eliminar cuando el ViewModel provea datos reales ──────
-private val sampleProducts = listOf(
-    ProductItem(1, "Hey Jude",    "The Beatles",  "$29.99", Color(0xFF3D2B1F)),
-    ProductItem(2, "Hey Jude",    "The Beatles",  "$29.99", Color(0xFF8B0000)),
-    ProductItem(3, "Abbey Road",  "The Beatles",  "$34.99", Color(0xFF3D2B1F)),
-    ProductItem(4, "Let It Be",   "The Beatles",  "$29.99", Color(0xFF2E2E2E)),
-    ProductItem(5, "Thriller",    "Michael Jackson","$32.99", Color(0xFF1A1A2E)),
-    ProductItem(6, "Rumours",     "Fleetwood Mac","$27.99", Color(0xFF4A3728)),
-)
+
 
 private val catalogCategories = listOf("Todos", "Rock", "Jazz", "Pop", "Classical", "Funk")
 
@@ -75,13 +75,24 @@ fun CatalogScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToProduct: (Int) -> Unit = {}
 ) {
+
+    val viewModel: ProductViewModel = viewModel()
+
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProducts()
+    }
+
+    val sampleProducts = viewModel.products
+    val products = sampleProducts
+
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todos") }
 
     // TODO (BACKEND): Reemplazar con datos del ViewModel:
     // val uiState by catalogViewModel.uiState.collectAsState()
     // val products = uiState.products
-    val products = sampleProducts
 
     Scaffold(
         topBar = { CatalogTopBar() },
@@ -160,6 +171,8 @@ fun CatalogScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            Text("Productos cargados: ${viewModel.products.size}")
+            Text("Error: ${viewModel.errorMessage ?: "ninguno"}")
             // Grid de Productos
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -167,7 +180,8 @@ fun CatalogScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                items(products, key = { it.id }) { product ->
+                items(products, key = { product -> product.id },
+                    ) { product ->
                     ProductCard(
                         product = product,
                         onFavoriteClick = {
@@ -282,7 +296,7 @@ private fun CategoryRow(
 
 @Composable
 private fun ProductCard(
-    product: ProductItem,
+    product: Product,
     onFavoriteClick: () -> Unit,
     onAddToCartClick: () -> Unit,
     onProductClick: () -> Unit
@@ -299,7 +313,7 @@ private fun ProductCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .background(product.placeholderColor)
+                    .background(Color.Gray)
             ) {
                 /*
                  * TODO Esta es la parte del backend y las instrucciones:
@@ -316,7 +330,7 @@ private fun ProductCard(
                  *   implementation("io.coil-kt:coil-compose:2.6.0")
                  */
 
-                // Botón de favorito flotante sobre la imagen
+                /* Botón de favorito flotante sobre la imagen
                 IconButton(
                     onClick = onFavoriteClick,
                     modifier = Modifier
@@ -337,113 +351,79 @@ private fun ProductCard(
                     )
                 }
             }
-
-            // Info del producto
-            Column(
-                modifier = Modifier.padding(
-                    start = 10.dp, end = 6.dp, top = 8.dp, bottom = 4.dp
-                )
-            ) {
-                Text(
-                    text = product.title,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = LpzDark,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = product.artist,
+            */
+            }
+                // Info del producto
+                Column(
+                    modifier = Modifier.padding(
+                        start = 10.dp, end = 6.dp, top = 8.dp, bottom = 4.dp
+                    )
+                ) {
+                    Text(
+                        text = product.name,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LpzDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                    text = product.artist.name,
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = product.price,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = LpzDark
                     )
-                    IconButton(
-                        onClick = onAddToCartClick,
-                        modifier = Modifier.size(32.dp)
+                    Text(
+                    text = product.category.name,
+                    fontSize = 11.sp,
+                    color = LpzDark.copy(alpha = 0.55f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Añadir al carrito",
-                            tint = LpzDark,
-                            modifier = Modifier.size(17.dp)
+                        Text(
+                            text = "" + product.price,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = LpzDark
                         )
+                        IconButton(
+                            onClick = onAddToCartClick,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = "Añadir al carrito",
+                                tint = LpzDark,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
 //  BOTTOM NAVIGATION BAR
 //  TODO: Extraer a ui/components/LpzBottomNavBar.kt cuando otras pantallas
 //  también necesiten esta barra (HomeScreen, FavoritesScreen, ProfileScreen…).
 //  Este se va a cambiar a un componente para no estar repitiendo codigo
 // ─────────────────────────────────────────────────────────────────────────────
 
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun CatalogBottomBar(
-    onHome: () -> Unit,
-    onSearch: () -> Unit,
-    onCart: () -> Unit,
-    onFavorites: () -> Unit,
-    onProfile: () -> Unit
-) {
-    Surface(
-        color = LpzBeige,
-        shadowElevation = 12.dp,
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(icon = Icons.Default.Home,          label = "Inicio",    onClick = onHome)
-            BottomNavItem(icon = Icons.Default.Search,        label = "Buscar",    onClick = onSearch)
-
-            // Botón central del carrito
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(LpzRed)
-                    .clickable(onClick = onCart),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = "Carrito de compras",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            BottomNavItem(icon = Icons.Default.FavoriteBorder, label = "Favoritos", onClick = onFavorites)
-            BottomNavItem(icon = Icons.Default.Person,          label = "Perfil",    onClick = onProfile)
-        }
-    }
+fun CatalogScreenPreview() {
+    CatalogScreen()
 }
 
 @Composable
-private fun BottomNavItem(
+fun BottomNavItem(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit
@@ -469,9 +449,54 @@ private fun BottomNavItem(
     }
 }
 
-
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun CatalogScreenPreview() {
-    CatalogScreen()
+fun CatalogBottomBar(
+    onHome: () -> Unit,
+    onSearch: () -> Unit,
+    onCart: () -> Unit,
+    onFavorites: () -> Unit,
+    onProfile: () -> Unit
+) {
+    Surface(
+        color = LpzBeige,
+        shadowElevation = 12.dp,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BottomNavItem(icon = Icons.Default.Home, label = "Inicio", onClick = onHome)
+            BottomNavItem(icon = Icons.Default.Search, label = "Buscar", onClick = onSearch)
+
+            // Botón central del carrito
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(LpzRed)
+                    .clickable(onClick = onCart),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = "Carrito de compras",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            BottomNavItem(
+                icon = Icons.Default.FavoriteBorder,
+                label = "Favoritos",
+                onClick = onFavorites
+            )
+            BottomNavItem(icon = Icons.Default.Person, label = "Perfil", onClick = onProfile)
+        }
+    }
 }

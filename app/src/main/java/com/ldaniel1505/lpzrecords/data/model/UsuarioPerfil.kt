@@ -5,6 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UsuarioPerfil (
         val id: String,
-        val nombre: String,
-        val es_admin: Boolean
+        val name: String,
+        val is_admin: Boolean
 )

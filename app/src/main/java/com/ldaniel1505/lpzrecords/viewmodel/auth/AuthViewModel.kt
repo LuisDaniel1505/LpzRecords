@@ -46,13 +46,13 @@ class AuthViewModel : ViewModel() {
 
                 if (uid != null) {
                     // 3. Consultar en TU tabla 'usuarios' usando el UUID para obtener el rol
-                    val perfil = SupabaseClient.client.postgrest["usuarios"]
+                    val perfil = SupabaseClient.client.postgrest["users"]
                         .select {
                             filter { eq("id", uid) }
                         }.decodeSingle<UsuarioPerfil>()
 
                     // Éxito: Le asignamos el valor de 'es_admin' (true o false)
-                    loginSuccessByRole = perfil.es_admin
+                    loginSuccessByRole = perfil.is_admin
                 } else {
                     errorMessage = "No se pudo obtener el ID del usuario."
                 }

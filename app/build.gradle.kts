@@ -53,6 +53,7 @@ dependencies {
     // Serialización (Para convertir JSON a objetos Kotlin fácilmente)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
