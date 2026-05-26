@@ -13,6 +13,8 @@ import com.ldaniel1505.lpzrecords.ui.screens.account.OrdersScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PersonalInfoScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AddressesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodsScreen
+import com.ldaniel1505.lpzrecords.ui.screens.cart.CartScreen
+import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 
 @Composable
 fun AppNavigation() {
@@ -56,7 +58,7 @@ fun AppNavigation() {
             CatalogScreen(
                 onNavigateToHome      = { /* Ya estamos en el catálogo */ },
                 onNavigateToSearch    = { /* TODO: navegar a SearchScreen */ },
-                onNavigateToCart      = { /* TODO: navegar a CartScreen */ },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { /* TODO: navegar a FavoritesScreen */ },
                 onNavigateToProfile   = { navController.navigate(Screen.Account.route) },
                 onNavigateToProduct   = { productId -> /* TODO: Screen.ProductDetail(productId) */ }
@@ -71,7 +73,7 @@ fun AppNavigation() {
                     }
                 },
                 onNavigateToSearch       = { /* TODO: navegar a SearchScreen */ },
-                onNavigateToCart         = { /* TODO: navegar a CartScreen */ },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites    = { /* TODO: navegar a FavoritesScreen */ },
                 onNavigateToOrders       = { navController.navigate(Screen.Orders.route) },
                 onNavigateToPersonalInfo = { navController.navigate(Screen.PersonalInfo.route) },
@@ -93,7 +95,7 @@ fun AppNavigation() {
                     }
                 },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
-                onNavigateToCart      = { /* TODO: CartScreen */ },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
                 onNavigateToProfile   = { navController.popBackStack() }
             )
@@ -107,7 +109,7 @@ fun AppNavigation() {
                     }
                 },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
-                onNavigateToCart      = { /* TODO: CartScreen */ },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
                 onNavigateToProfile   = { navController.popBackStack() }
             )
@@ -121,7 +123,7 @@ fun AppNavigation() {
                     }
                 },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
-                onNavigateToCart      = { /* TODO: CartScreen */ },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
                 onNavigateToProfile   = { navController.popBackStack() }
             )
@@ -135,9 +137,45 @@ fun AppNavigation() {
                     }
                 },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
-                onNavigateToCart      = { /* TODO: CartScreen */ },
+                onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
                 onNavigateToProfile   = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Cart.route) {
+            CartScreen(
+                onNavigateBack    = { navController.popBackStack() },
+                onNavigateToHome  = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToSearch    = { /* TODO: SearchScreen */ },
+                onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
+                onNavigateToProfile   = { navController.navigate(Screen.Account.route) },
+                onNavigateToCheckout  = { navController.navigate(Screen.Checkout.route) }
+            )
+        }
+
+        composable(Screen.Checkout.route) {
+            CheckoutScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToSearch         = { /* TODO: SearchScreen */ },
+                onNavigateToFavorites      = { /* TODO: FavoritesScreen */ },
+                onNavigateToProfile        = { navController.navigate(Screen.Account.route) },
+                onNavigateToAddresses      = { navController.navigate(Screen.Addresses.route) },
+                onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
+                onConfirmOrder = {
+                    navController.navigate(Screen.Orders.route) {
+                        popUpTo(Screen.Cart.route) { inclusive = true }
+                    }
+                }
             )
         }
     }

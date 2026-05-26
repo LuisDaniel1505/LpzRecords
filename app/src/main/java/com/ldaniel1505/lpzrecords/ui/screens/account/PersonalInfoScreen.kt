@@ -28,6 +28,7 @@ import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PANTALLA PRINCIPAL
@@ -53,7 +54,7 @@ fun PersonalInfoScreen(
     }
 
     Scaffold(
-        topBar = { PersonalInfoTopBar() },
+        topBar = { PersonalInfoTopBar(onNavigateBack = onNavigateToProfile) },
         bottomBar = {
             LpzBottomNavBar(
                 selectedTab = BottomNavTab.PROFILE,
@@ -217,8 +218,17 @@ private fun EditableInfoCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PersonalInfoTopBar() {
+private fun PersonalInfoTopBar(onNavigateBack: () -> Unit) {
     TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Regresar",
+                    tint               = LpzDark
+                )
+            }
+        },
         title = {
             Box(
                 modifier        = Modifier.fillMaxWidth(),

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MODELO DE DATOS
@@ -117,7 +119,7 @@ fun PaymentMethodsScreen(
     }
 
     Scaffold(
-        topBar = { PaymentMethodsTopBar() },
+        topBar = { PaymentMethodsTopBar(onNavigateBack = onNavigateToProfile) },
         bottomBar = {
             LpzBottomNavBar(
                 selectedTab = BottomNavTab.PROFILE,
@@ -317,8 +319,17 @@ private fun AddCardButton(onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PaymentMethodsTopBar() {
+private fun PaymentMethodsTopBar(onNavigateBack: () -> Unit) {
     TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Regresar",
+                    tint               = LpzDark
+                )
+            }
+        },
         title = {
             Box(
                 modifier         = Modifier.fillMaxWidth(),
