@@ -19,7 +19,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
     NavHost(
-        navController = navController,
+        navController  = navController,
         startDestination = Screen.Main.route
     ) {
         composable(Screen.Main.route) {
@@ -28,45 +28,54 @@ fun AppNavigation() {
                 onNavigateToStore = { /* TODO: Navegar a Home/Store */ }
             )
         }
+
         composable(Screen.Login.route) {
             LoginScreen(
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-                onLoginSuccess = {
+                onLoginSuccess = { isAdmin ->
+                    // TODO: Si isAdmin == true, redirigir a pantalla de administrador
                     navController.navigate(Screen.Catalog.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }
                     }
                 }
             )
         }
+
         composable(Screen.SignUp.route) {
             SignUpScreen(
                 onNavigateToLogin = { navController.popBackStack() },
-                onSignUpSuccess = {
+                onSignUpSuccess   = {
                     navController.navigate(Screen.Catalog.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }
                     }
                 }
             )
         }
+
         composable(Screen.Catalog.route) {
             CatalogScreen(
-                onNavigateToHome      = { /* TODO: navegar a HomeScreen */ },
+                onNavigateToHome      = { /* Ya estamos en el catálogo */ },
                 onNavigateToSearch    = { /* TODO: navegar a SearchScreen */ },
                 onNavigateToCart      = { /* TODO: navegar a CartScreen */ },
                 onNavigateToFavorites = { /* TODO: navegar a FavoritesScreen */ },
-                onNavigateToProfile = { navController.navigate(Screen.Account.route) },
-                        onNavigateToProduct   = { productId -> /* TODO: Screen.ProductDetail(productId) */ }
+                onNavigateToProfile   = { navController.navigate(Screen.Account.route) },
+                onNavigateToProduct   = { productId -> /* TODO: Screen.ProductDetail(productId) */ }
             )
         }
+
         composable(Screen.Account.route) {
             AccountScreen(
-                onNavigateToHome         = { navController.navigate(Screen.Catalog.route) },
+                onNavigateToHome         = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToSearch       = { /* TODO: navegar a SearchScreen */ },
                 onNavigateToCart         = { /* TODO: navegar a CartScreen */ },
                 onNavigateToFavorites    = { /* TODO: navegar a FavoritesScreen */ },
-                onNavigateToOrders = { navController.navigate(Screen.Orders.route) },
+                onNavigateToOrders       = { navController.navigate(Screen.Orders.route) },
                 onNavigateToPersonalInfo = { navController.navigate(Screen.PersonalInfo.route) },
-                onNavigateToAddresses = { navController.navigate(Screen.Addresses.route) },
+                onNavigateToAddresses    = { navController.navigate(Screen.Addresses.route) },
                 onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
@@ -75,40 +84,60 @@ fun AppNavigation() {
                 }
             )
         }
+
         composable(Screen.Orders.route) {
             OrdersScreen(
-                onNavigateToHome      = { navController.navigate(Screen.Catalog.route) },
+                onNavigateToHome      = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
                 onNavigateToCart      = { /* TODO: CartScreen */ },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
                 onNavigateToProfile   = { navController.popBackStack() }
             )
         }
+
         composable(Screen.PersonalInfo.route) {
             PersonalInfoScreen(
-                onNavigateToHome      = { navController.navigate(Screen.Catalog.route) },
+                onNavigateToHome      = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
                 onNavigateToCart      = { /* TODO: CartScreen */ },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
-                onNavigateToProfile   = { navController.popBackStack() } // vuelve a AccountScreen
+                onNavigateToProfile   = { navController.popBackStack() }
             )
         }
+
         composable(Screen.Addresses.route) {
             AddressesScreen(
-                onNavigateToHome      = { navController.navigate(Screen.Catalog.route) },
+                onNavigateToHome      = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
                 onNavigateToCart      = { /* TODO: CartScreen */ },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
-                onNavigateToProfile   = { navController.popBackStack() } // vuelve a AccountScreen
+                onNavigateToProfile   = { navController.popBackStack() }
             )
         }
+
         composable(Screen.PaymentMethods.route) {
             PaymentMethodsScreen(
-                onNavigateToHome      = { navController.navigate(Screen.Catalog.route) },
+                onNavigateToHome      = {
+                    navController.navigate(Screen.Catalog.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToSearch    = { /* TODO: SearchScreen */ },
                 onNavigateToCart      = { /* TODO: CartScreen */ },
                 onNavigateToFavorites = { /* TODO: FavoritesScreen */ },
-                onNavigateToProfile   = { navController.popBackStack() } // vuelve a AccountScreen
+                onNavigateToProfile   = { navController.popBackStack() }
             )
         }
     }

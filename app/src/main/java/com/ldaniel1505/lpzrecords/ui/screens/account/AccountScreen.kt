@@ -9,11 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,11 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
+import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -58,12 +55,13 @@ fun AccountScreen(
     Scaffold(
         topBar = { AccountTopBar() },
         bottomBar = {
-            AccountBottomBar(
+            LpzBottomNavBar(
+                selectedTab = BottomNavTab.PROFILE,
                 onHome      = onNavigateToHome,
                 onSearch    = onNavigateToSearch,
                 onCart      = onNavigateToCart,
                 onFavorites = onNavigateToFavorites,
-                onProfile   = { /* Ya estamos en Perfil */ }
+                onProfile   = { /* Pantalla activa, no navegar */ }
             )
         },
         containerColor = LpzBeige
@@ -78,7 +76,7 @@ fun AccountScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            //  Avatar
+            // ── Avatar ────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(84.dp)
@@ -88,15 +86,12 @@ fun AccountScreen(
             ) {
                 /*
                  * TODO (BACKEND + COIL): Mostrar foto de perfil del usuario.
-                 * Cuando tengas la URL de la foto, reemplaza este bloque con:
-                 *
                  *   AsyncImage(
                  *       model = userState.photoUrl,
                  *       contentDescription = userState.fullName,
                  *       contentScale = ContentScale.Crop,
                  *       modifier = Modifier.fillMaxSize().clip(CircleShape)
                  *   )
-                 *
                  * Dependencia: implementation("io.coil-kt:coil-compose:2.6.0")
                  */
                 Text(
@@ -109,7 +104,7 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Nombre del usuario
+            // ── Nombre del usuario ────────────────────────────────────
             Text(
                 text = userName,
                 fontSize = 21.sp,
@@ -119,7 +114,7 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            //  Sección: Mi Actividad
+            // ── Sección: Mi Actividad ─────────────────────────────────
             SectionHeader(title = "MI ACTIVIDAD")
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -141,7 +136,6 @@ fun AccountScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Icono "Mis compras"
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -186,7 +180,7 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Sección: Configuración
+            // ── Sección: Configuración ────────────────────────────────
             SectionHeader(title = "CONFIGURACION")
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -229,7 +223,7 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Botón Cerrar Sesión
+            // ── Botón Cerrar Sesión ───────────────────────────────────
             OutlinedButton(
                 onClick = {
                     // TODO (BACKEND): accountViewModel.logout()
@@ -238,7 +232,7 @@ fun AccountScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
+                shape  = RoundedCornerShape(14.dp),
                 border = BorderStroke(1.5.dp, LpzRed),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = LpzRed)
             ) {
@@ -299,7 +293,7 @@ private fun ConfigRow(
             modifier = Modifier.weight(1f)
         ) {
             /*
-             * TODO: Se va a necesitar que se cambie este Box por el icono real de cada fila, por ejemplo:
+             * TODO: Reemplazar Box por el icono real de cada fila:
              *   Icon(painter = painterResource(R.drawable.ic_person), ...)
              *   Icon(painter = painterResource(R.drawable.ic_location), ...)
              *   Icon(painter = painterResource(R.drawable.ic_credit_card), ...)
@@ -333,7 +327,6 @@ private fun ConfigRow(
     }
 }
 
-
 @Composable
 private fun ConfigRowWithSwitch(
     title: String,
@@ -353,7 +346,7 @@ private fun ConfigRowWithSwitch(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f)
         ) {
-            // TODO: Mismo reemplazo de icono que en ConfigRow (ej. Icons.Outlined.Notifications)
+            // TODO: Reemplazar con Icons.Outlined.Notifications
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -399,79 +392,6 @@ private fun AccountTopBar() {
         colors = TopAppBarDefaults.topAppBarColors(containerColor = LpzBeige)
     )
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  BOTTOM NAVIGATION BAR
-// ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun AccountBottomBar(
-    onHome: () -> Unit,
-    onSearch: () -> Unit,
-    onCart: () -> Unit,
-    onFavorites: () -> Unit,
-    onProfile: () -> Unit
-) {
-    Surface(
-        color = LpzBeige,
-        shadowElevation = 12.dp,
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(90.dp)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(icon = Icons.Default.Home,          label = "Inicio",    isSelected = false, onClick = onHome)
-            BottomNavItem(icon = Icons.Default.Search,        label = "Buscar",    isSelected = false, onClick = onSearch)
-
-            // Botón central del carrito
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(LpzRed)
-                    .clickable(onClick = onCart),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = "Carrito de compras",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            BottomNavItem(icon = Icons.Default.FavoriteBorder, label = "Favoritos", isSelected = false, onClick = onFavorites)
-            // "Perfil" resaltado en LpzRed porque es la pantalla activa
-            BottomNavItem(icon = Icons.Default.Person,          label = "Perfil",   isSelected = true,  onClick = onProfile)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val tint = if (isSelected) LpzRed else LpzDark
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
-        Text(text = label, fontSize = 10.sp, color = tint, fontWeight = FontWeight.Medium)
-    }
-}
-
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

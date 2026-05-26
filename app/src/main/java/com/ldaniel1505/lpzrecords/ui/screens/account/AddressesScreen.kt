@@ -1,18 +1,10 @@
 package com.ldaniel1505.lpzrecords.ui.screens.account
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,13 +15,14 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
+import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -39,9 +32,9 @@ import com.ldaniel1505.lpzrecords.ui.theme.*
 
 data class Address(
     val id: Int,
-    val nickname: String,      // Ej: "CASA", "TRABAJO", "OTRO"
-    val street: String,        // Calle y colonia
-    val cityStateZip: String,  // Ciudad, Estado, C.P.
+    val nickname: String,
+    val street: String,
+    val cityStateZip: String,
     val country: String,
     val isDefault: Boolean = false
 )
@@ -75,10 +68,8 @@ fun AddressesScreen(
     // val addresses = uiState.addresses
     val addresses = sampleAddresses
 
-    // Controla cuál dirección está pendiente de eliminar
     var addressToDelete by remember { mutableStateOf<Address?>(null) }
 
-    // ── Diálogo de confirmación de eliminación ─────────────────────────
     if (addressToDelete != null) {
         AlertDialog(
             onDismissRequest = { addressToDelete = null },
@@ -116,7 +107,8 @@ fun AddressesScreen(
     Scaffold(
         topBar = { AddressesTopBar() },
         bottomBar = {
-            AddressesBottomBar(
+            LpzBottomNavBar(
+                selectedTab = BottomNavTab.PROFILE,
                 onHome      = onNavigateToHome,
                 onSearch    = onNavigateToSearch,
                 onCart      = onNavigateToCart,
@@ -134,24 +126,20 @@ fun AddressesScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(vertical = 20.dp)
         ) {
-            // ── Tarjetas de dirección ──────────────────────────────────
             items(addresses, key = { it.id }) { address ->
                 AddressCard(
                     address  = address,
                     onEdit   = {
-                        // TODO (BACKEND): Navegar a pantalla de edición de dirección
-                        // navController.navigate(Screen.EditAddress.route + "/${address.id}")
+                        // TODO (BACKEND): navController.navigate(Screen.EditAddress.route + "/${address.id}")
                     },
                     onDelete = { addressToDelete = address }
                 )
             }
 
-            // ── Botón para añadir nueva dirección ─────────────────────
             item {
                 AddAddressButton(
                     onClick = {
-                        // TODO (BACKEND): Navegar a pantalla de nueva dirección
-                        // navController.navigate(Screen.NewAddress.route)
+                        // TODO (BACKEND): navController.navigate(Screen.NewAddress.route)
                     }
                 )
             }
@@ -177,13 +165,11 @@ private fun AddressCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // ── Fila superior: badge + apodo ───────────────────────────
             Row(
                 verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (address.isDefault) {
-                    // Badge "PREDETERMINADA"
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = LpzRed
@@ -208,7 +194,6 @@ private fun AddressCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Detalles de la dirección ───────────────────────────────
             Text(
                 text       = address.street,
                 fontSize   = 14.sp,
@@ -228,14 +213,10 @@ private fun AddressCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            HorizontalDivider(
-                color     = Color.Gray.copy(alpha = 0.12f),
-                thickness = 1.dp
-            )
+            HorizontalDivider(color = Color.Gray.copy(alpha = 0.12f), thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // ── Acciones: Editar / Eliminar ────────────────────────────
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
                 Text(
                     text       = "EDITAR",
@@ -262,11 +243,6 @@ private fun AddressCard(
     }
 }
 
-/**
- * Botón con borde discontinuo para añadir una nueva dirección.
- * El efecto de guiones se logra con [PathEffect.dashPathEffect] pintado
- * directamente en el Canvas, sin necesidad de dependencias externas.
- */
 @Composable
 private fun AddAddressButton(onClick: () -> Unit) {
     val dashedBorderColor = LpzDark.copy(alpha = 0.30f)
@@ -277,12 +253,10 @@ private fun AddAddressButton(onClick: () -> Unit) {
             .height(56.dp)
             .clip(RoundedCornerShape(14.dp))
             .drawBehind {
-                val strokePx  = 1.5.dp.toPx()
-                val dashPx    = 12.dp.toPx()
-                val gapPx     = 6.dp.toPx()
-                val pathEffect = PathEffect.dashPathEffect(
-                    floatArrayOf(dashPx, gapPx), 0f
-                )
+                val strokePx   = 1.5.dp.toPx()
+                val dashPx     = 12.dp.toPx()
+                val gapPx      = 6.dp.toPx()
+                val pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashPx, gapPx), 0f)
                 drawRoundRect(
                     color        = dashedBorderColor,
                     style        = Stroke(width = strokePx, pathEffect = pathEffect),
@@ -335,79 +309,6 @@ private fun AddressesTopBar() {
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = LpzBeige)
     )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  BOTTOM NAVIGATION BAR
-//  "Perfil" permanece resaltado al ser una subpantalla del módulo de cuenta.
-//  TODO: Extraer a ui/components/LpzBottomNavBar.kt junto con las demás pantallas.
-// ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun AddressesBottomBar(
-    onHome: () -> Unit,
-    onSearch: () -> Unit,
-    onCart: () -> Unit,
-    onFavorites: () -> Unit,
-    onProfile: () -> Unit
-) {
-    Surface(
-        color           = LpzBeige,
-        shadowElevation = 12.dp,
-        tonalElevation  = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            BottomNavItem(icon = Icons.Default.Home,           label = "Inicio",    isSelected = false, onClick = onHome)
-            BottomNavItem(icon = Icons.Default.Search,         label = "Buscar",    isSelected = false, onClick = onSearch)
-
-            // ── Botón central del carrito ──────────────────────────────
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(LpzRed)
-                    .clickable(onClick = onCart),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.ShoppingCart,
-                    contentDescription = "Carrito de compras",
-                    tint               = Color.White,
-                    modifier           = Modifier.size(24.dp)
-                )
-            }
-
-            BottomNavItem(icon = Icons.Default.FavoriteBorder, label = "Favoritos", isSelected = false, onClick = onFavorites)
-            BottomNavItem(icon = Icons.Default.Person,         label = "Perfil",    isSelected = true,  onClick = onProfile)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val tint = if (isSelected) LpzRed else LpzDark
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
-        Text(text = label, fontSize = 10.sp, color = tint, fontWeight = FontWeight.Medium)
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

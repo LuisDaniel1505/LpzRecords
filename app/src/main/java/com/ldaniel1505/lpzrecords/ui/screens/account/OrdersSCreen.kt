@@ -1,31 +1,22 @@
 package com.ldaniel1505.lpzrecords.ui.screens.account
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
+import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -35,14 +26,14 @@ import com.ldaniel1505.lpzrecords.ui.theme.*
 
 data class OrderItem(
     val productName: String,
-    val buyerName: String,   // TODO (BACKEND): Vendrá del objeto User autenticado
+    val buyerName: String,  // TODO (BACKEND): Vendrá del objeto User autenticado
     val price: Double
 )
 
 data class Order(
     val id: Int,
-    val status: String,      // "ENVIADO" | "PENDIENTE" | "ENTREGADO" | "CANCELADO"
-    val date: String,        // TODO (BACKEND): Usar LocalDate y formatear con DateTimeFormatter
+    val status: String,  // "ENVIADO" | "PENDIENTE" | "ENTREGADO" | "CANCELADO"
+    val date: String,    // TODO (BACKEND): Usar LocalDate y formatear con DateTimeFormatter
     val items: List<OrderItem>
 ) {
     val total: Double get() = items.sumOf { it.price }
@@ -71,10 +62,10 @@ private val sampleOrders = listOf(
 
 // ── Color dinámico según el estado del pedido ─────────────────────────────────
 private fun statusColor(status: String): Color = when (status.uppercase()) {
-    "ENVIADO"   -> Color(0xFF8B0000) // LpzRed
-    "ENTREGADO" -> Color(0xFF2E7D32) // Verde éxito
-    "CANCELADO" -> Color(0xFF757575) // Gris
-    else        -> Color(0xFF8B0000) // LpzRed por defecto (PENDIENTE, etc.)
+    "ENVIADO"   -> Color(0xFF8B0000)
+    "ENTREGADO" -> Color(0xFF2E7D32)
+    "CANCELADO" -> Color(0xFF757575)
+    else        -> Color(0xFF8B0000)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -90,15 +81,16 @@ fun OrdersScreen(
     onNavigateToProfile: () -> Unit = {}
 ) {
     // TODO (BACKEND): Obtener la lista de órdenes del usuario desde el ViewModel.
-    // val uiState by ordersViewModel.uiState.collectAsState()
-    // val orders  = uiState.orders
+    // val uiState   by ordersViewModel.uiState.collectAsState()
+    // val orders    = uiState.orders
     // val isLoading = uiState.isLoading
-    val orders = sampleOrders // Placeholder
+    val orders = sampleOrders
 
     Scaffold(
         topBar = { OrdersTopBar() },
         bottomBar = {
-            OrdersBottomBar(
+            LpzBottomNavBar(
+                selectedTab = BottomNavTab.PROFILE,
                 onHome      = onNavigateToHome,
                 onSearch    = onNavigateToSearch,
                 onCart      = onNavigateToCart,
@@ -155,12 +147,11 @@ fun OrdersScreen(
 
 @Composable
 private fun OrderCard(order: Order) {
-    // Colores internos de la tarjeta (tema oscuro / retro)
-    val cardBackground   = Color(0xFF2E2214)
-    val labelColor       = Color(0xFF9E8E78)   // "ESTADO", "TOTAL", fecha
-    val itemNameColor    = Color(0xFFF0E8D8)   // nombre del producto
-    val buyerNameColor   = Color(0xFFAA6655)   // nombre del comprador
-    val dividerColor     = Color(0xFF4A3828)
+    val cardBackground = Color(0xFF2E2214)
+    val labelColor     = Color(0xFF9E8E78)
+    val itemNameColor  = Color(0xFFF0E8D8)
+    val buyerNameColor = Color(0xFFAA6655)
+    val dividerColor   = Color(0xFF4A3828)
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -192,7 +183,6 @@ private fun OrderCard(order: Order) {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // ── Valor del estado ───────────────────────────────────────
             Text(
                 text = order.status,
                 fontSize = 14.sp,
@@ -202,7 +192,7 @@ private fun OrderCard(order: Order) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Lista de ítems del pedido ──────────────────────────────
+            // ── Lista de ítems ─────────────────────────────────────────
             order.items.forEach { item ->
                 // TODO (BACKEND): Cada item vendrá del endpoint /orders/{id}/items
                 Row(
@@ -236,7 +226,6 @@ private fun OrderCard(order: Order) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Divisor ────────────────────────────────────────────────
             HorizontalDivider(color = dividerColor, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -299,81 +288,6 @@ private fun OrdersTopBar() {
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = LpzBeige)
     )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  BOTTOM NAVIGATION BAR
-//  La pestaña "Perfil" permanece resaltada porque se llega aquí
-//  desde AccountScreen (sección de Perfil).
-//  TODO: Extraer a ui/components/LpzBottomNavBar.kt junto con las demás pantallas.
-// ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun OrdersBottomBar(
-    onHome: () -> Unit,
-    onSearch: () -> Unit,
-    onCart: () -> Unit,
-    onFavorites: () -> Unit,
-    onProfile: () -> Unit
-) {
-    Surface(
-        color = LpzBeige,
-        shadowElevation = 12.dp,
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(icon = Icons.Default.Home,           label = "Inicio",    isSelected = false, onClick = onHome)
-            BottomNavItem(icon = Icons.Default.Search,         label = "Buscar",    isSelected = false, onClick = onSearch)
-
-            // ── Botón central del carrito ──────────────────────────────
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(LpzRed)
-                    .clickable(onClick = onCart),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = "Carrito de compras",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            BottomNavItem(icon = Icons.Default.FavoriteBorder, label = "Favoritos", isSelected = false, onClick = onFavorites)
-            // "Perfil" permanece resaltado: esta pantalla es hija de AccountScreen
-            BottomNavItem(icon = Icons.Default.Person,         label = "Perfil",    isSelected = true,  onClick = onProfile)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val tint = if (isSelected) LpzRed else LpzDark
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
-        Text(text = label, fontSize = 10.sp, color = tint, fontWeight = FontWeight.Medium)
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

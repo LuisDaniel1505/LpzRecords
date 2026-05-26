@@ -5,14 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +17,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -33,20 +25,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
+import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MODELO DE DATOS
 //  TODO (BACKEND): Mover a data/model/PaymentCard.kt cuando el backend esté listo.
 //  IMPORTANTE: Nunca guardar el número completo de tarjeta en el cliente.
-//  Solo almacenar los últimos 4 dígitos y el token del proveedor de pagos.
 // ═══════════════════════════════════════════════════════════════════════════
 
 data class PaymentCard(
     val id: Int,
     val cardHolder: String,
-    val lastFourDigits: String,   // Solo los últimos 4 dígitos
-    val expiryDate: String,       // Formato "MM/YY"
+    val lastFourDigits: String,
+    val expiryDate: String,
     val network: CardNetwork
 )
 
@@ -68,7 +61,6 @@ private val sampleCards = listOf(
     )
 )
 
-// ── Formatea el número de tarjeta enmascarado ─────────────────────────────────
 private fun String.toMaskedCardNumber(): String = "•••• •••• ••••  $this"
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -88,10 +80,8 @@ fun PaymentMethodsScreen(
     // val cards   = uiState.cards
     val cards = sampleCards
 
-    // Controla cuál tarjeta está pendiente de eliminar
     var cardToDelete by remember { mutableStateOf<PaymentCard?>(null) }
 
-    // ── Diálogo de confirmación de eliminación ─────────────────────────
     if (cardToDelete != null) {
         AlertDialog(
             onDismissRequest = { cardToDelete = null },
@@ -129,7 +119,8 @@ fun PaymentMethodsScreen(
     Scaffold(
         topBar = { PaymentMethodsTopBar() },
         bottomBar = {
-            PaymentMethodsBottomBar(
+            LpzBottomNavBar(
+                selectedTab = BottomNavTab.PROFILE,
                 onHome      = onNavigateToHome,
                 onSearch    = onNavigateToSearch,
                 onCart      = onNavigateToCart,
@@ -145,9 +136,8 @@ fun PaymentMethodsScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(vertical = 24.dp)
+            contentPadding      = PaddingValues(vertical = 24.dp)
         ) {
-            // ── Tarjetas guardadas ─────────────────────────────────────
             items(cards, key = { it.id }) { card ->
                 CreditCardVisual(
                     card     = card,
@@ -155,11 +145,12 @@ fun PaymentMethodsScreen(
                 )
             }
 
-            // ── Estado vacío (visible solo si no hay tarjetas) ─────────
             if (cards.isEmpty()) {
                 item {
                     Box(
-                        modifier         = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        modifier         = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -171,12 +162,10 @@ fun PaymentMethodsScreen(
                 }
             }
 
-            // ── Botón añadir tarjeta ───────────────────────────────────
             item {
                 AddCardButton(
                     onClick = {
-                        // TODO (BACKEND): Navegar a pantalla de nueva tarjeta
-                        // navController.navigate(Screen.NewCard.route)
+                        // TODO (BACKEND): navController.navigate(Screen.NewCard.route)
                     }
                 )
             }
@@ -185,15 +174,9 @@ fun PaymentMethodsScreen(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENTE: Tarjeta de crédito/débito visual
+//  COMPONENTES INTERNOS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * Renderiza la tarjeta como un widget visual fiel a una tarjeta física.
- * Aspect ratio estándar de tarjeta bancaria: 85.6mm / 53.98mm ≈ 1.586
- *
- * La información sensible se muestra enmascarada — solo los últimos 4 dígitos.
- */
 @Composable
 private fun CreditCardVisual(
     card: PaymentCard,
@@ -204,16 +187,14 @@ private fun CreditCardVisual(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // ── Visual de la tarjeta ───────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.586f)
                 .clip(RoundedCornerShape(18.dp))
-                .background(brush = cardGradient)
+                .then(Modifier.background(brush = cardGradient))
                 .padding(22.dp)
         ) {
-            // ── Nombre de la red (VISA, MASTERCARD…) ──────────────────
             Text(
                 text       = card.network.displayName,
                 modifier   = Modifier.align(Alignment.TopEnd),
@@ -223,7 +204,6 @@ private fun CreditCardVisual(
                 fontStyle  = FontStyle.Italic
             )
 
-            // ── Número enmascarado ─────────────────────────────────────
             Text(
                 text       = card.lastFourDigits.toMaskedCardNumber(),
                 modifier   = Modifier.align(Alignment.Center),
@@ -233,7 +213,6 @@ private fun CreditCardVisual(
                 letterSpacing = 2.sp
             )
 
-            // ── Fila inferior: Titular + Vence ─────────────────────────
             Row(
                 modifier              = Modifier
                     .align(Alignment.BottomStart)
@@ -281,7 +260,6 @@ private fun CreditCardVisual(
             }
         }
 
-        // ── Acción eliminar debajo de la tarjeta ───────────────────────
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -300,10 +278,6 @@ private fun CreditCardVisual(
     }
 }
 
-/**
- * Botón con borde discontinuo para añadir una nueva tarjeta.
- * Mismo tratamiento visual que en AddressesScreen para coherencia de diseño.
- */
 @Composable
 private fun AddCardButton(onClick: () -> Unit) {
     val dashedColor = LpzDark.copy(alpha = 0.28f)
@@ -370,79 +344,6 @@ private fun PaymentMethodsTopBar() {
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = LpzBeige)
     )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  BOTTOM NAVIGATION BAR
-//  "Perfil" permanece resaltado al ser una subpantalla del módulo de cuenta.
-//  TODO: Extraer a ui/components/LpzBottomNavBar.kt junto con las demás pantallas.
-// ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun PaymentMethodsBottomBar(
-    onHome: () -> Unit,
-    onSearch: () -> Unit,
-    onCart: () -> Unit,
-    onFavorites: () -> Unit,
-    onProfile: () -> Unit
-) {
-    Surface(
-        color           = LpzBeige,
-        shadowElevation = 12.dp,
-        tonalElevation  = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            BottomNavItem(icon = Icons.Default.Home,           label = "Inicio",    isSelected = false, onClick = onHome)
-            BottomNavItem(icon = Icons.Default.Search,         label = "Buscar",    isSelected = false, onClick = onSearch)
-
-            // ── Botón central del carrito ──────────────────────────────
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(LpzRed)
-                    .clickable(onClick = onCart),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.ShoppingCart,
-                    contentDescription = "Carrito de compras",
-                    tint               = Color.White,
-                    modifier           = Modifier.size(24.dp)
-                )
-            }
-
-            BottomNavItem(icon = Icons.Default.FavoriteBorder, label = "Favoritos", isSelected = false, onClick = onFavorites)
-            BottomNavItem(icon = Icons.Default.Person,         label = "Perfil",    isSelected = true,  onClick = onProfile)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val tint = if (isSelected) LpzRed else LpzDark
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
-        Text(text = label, fontSize = 10.sp, color = tint, fontWeight = FontWeight.Medium)
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
