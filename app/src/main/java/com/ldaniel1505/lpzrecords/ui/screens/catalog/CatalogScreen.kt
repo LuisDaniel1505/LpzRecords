@@ -2,6 +2,7 @@ package com.ldaniel1505.lpzrecords.ui.screens.catalog
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -25,8 +26,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.data.model.Product
+import com.ldaniel1505.lpzrecords.navigation.AppNavigation
+import com.ldaniel1505.lpzrecords.navigation.Screen
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
@@ -260,6 +264,8 @@ private fun CategoryRow(
     }
 }
 
+
+
 @Composable
 private fun ProductCard(
     product: Product,
@@ -267,7 +273,12 @@ private fun ProductCard(
     onAddToCartClick: () -> Unit,
     onProductClick: () -> Unit
 ) {
+
+    val navController = rememberNavController()
     Card(
+        modifier = Modifier.clickable{
+            navController.navigate(Screen.ProductDetail.createRoute(product.id))
+        },
         onClick = onProductClick,
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
