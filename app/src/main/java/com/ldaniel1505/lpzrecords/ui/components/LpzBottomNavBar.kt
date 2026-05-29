@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,64 +44,68 @@ fun LpzBottomNavBar(
     onFavorites: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Surface(
-        color = LpzBeige,
-        shadowElevation = 12.dp,
-        tonalElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(90.dp)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+    Column{
+        HorizontalDivider(color = LpzDark, thickness = 1.dp)
+        Surface(
+            color = LpzBeige,
+            shadowElevation = 12.dp,
+            tonalElevation = 0.dp
         ) {
-            LpzNavItem(
-                icon       = Icons.Default.Home,
-                label      = "Inicio",
-                isSelected = selectedTab == BottomNavTab.HOME,
-                onClick    = onHome
-            )
-            LpzNavItem(
-                icon       = Icons.Default.Search,
-                label      = "Buscar",
-                isSelected = selectedTab == BottomNavTab.SEARCH,
-                onClick    = onSearch
-            )
-
-            // ── Botón central del carrito (siempre en LpzRed) ─────────
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(LpzRed)
-                    .clickable(onClick = onCart),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    //.height(90.dp)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 4.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector        = Icons.Default.ShoppingCart,
-                    contentDescription = "Carrito de compras",
-                    tint               = Color.White,
-                    modifier           = Modifier.size(24.dp)
+                LpzNavItem(
+                    icon       = Icons.Default.Home,
+                    label      = "Inicio",
+                    isSelected = selectedTab == BottomNavTab.HOME,
+                    onClick    = onHome
+                )
+                LpzNavItem(
+                    icon       = Icons.Default.Search,
+                    label      = "Buscar",
+                    isSelected = selectedTab == BottomNavTab.SEARCH,
+                    onClick    = onSearch
+                )
+
+                // ── Botón central del carrito (siempre en LpzRed) ─────────
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(LpzRed)
+                        .clickable(onClick = onCart),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.ShoppingCart,
+                        contentDescription = "Carrito de compras",
+                        tint               = Color.White,
+                        modifier           = Modifier.size(24.dp)
+                    )
+                }
+
+                LpzNavItem(
+                    icon       = Icons.Default.FavoriteBorder,
+                    label      = "Favoritos",
+                    isSelected = selectedTab == BottomNavTab.FAVORITES,
+                    onClick    = onFavorites
+                )
+                LpzNavItem(
+                    icon       = Icons.Default.Person,
+                    label      = "Perfil",
+                    isSelected = selectedTab == BottomNavTab.PROFILE,
+                    onClick    = onProfile
                 )
             }
-
-            LpzNavItem(
-                icon       = Icons.Default.FavoriteBorder,
-                label      = "Favoritos",
-                isSelected = selectedTab == BottomNavTab.FAVORITES,
-                onClick    = onFavorites
-            )
-            LpzNavItem(
-                icon       = Icons.Default.Person,
-                label      = "Perfil",
-                isSelected = selectedTab == BottomNavTab.PROFILE,
-                onClick    = onProfile
-            )
         }
     }
+
 }
 
 @Composable
