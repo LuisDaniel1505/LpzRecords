@@ -19,6 +19,8 @@ import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodsScreen
 import com.ldaniel1505.lpzrecords.ui.screens.cart.CartScreen
 import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 import com.ldaniel1505.lpzrecords.ui.screens.favorites.FavoritesScreen
+import com.ldaniel1505.lpzrecords.ui.screens.admin.ProductControlScreen
+import com.ldaniel1505.lpzrecords.ui.screens.admin.AdminHostScreen
 
 @Composable
 fun AppNavigation() {
@@ -39,9 +41,18 @@ fun AppNavigation() {
             LoginScreen(
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                 onLoginSuccess = { isAdmin ->
-                    // TODO: Si isAdmin == true, redirigir a pantalla de administrador
+                    /*// TODO: Si isAdmin == true, redirigir a pantalla de administrador
                     navController.navigate(Screen.Catalog.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }
+                    }*/
+                    if (isAdmin) {
+                        navController.navigate(Screen.AdminHost.route) {
+                            popUpTo(Screen.Main.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Catalog.route) {
+                            popUpTo(Screen.Main.route) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -216,6 +227,23 @@ fun AppNavigation() {
                 onNavigateToSearch  = { /* TODO: SearchScreen */ },
                 onNavigateToCart    = { navController.navigate(Screen.Cart.route) },
                 onNavigateToProfile = { navController.navigate(Screen.Account.route) }
+            )
+        }
+
+        composable(Screen.ProductControl.route) {
+            ProductControlScreen(
+                onNavigateBack = { navController.popBackStack() },
+                //onNavigateToAddProduct = { /* TODO: navegar a formulario de nuevo producto si lo separas */}
+            )
+        }
+
+        composable(Screen.AdminHost.route) {
+            AdminHostScreen(
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.AdminHost.route) { inclusive = true }
+                    }
+                }
             )
         }
     }
