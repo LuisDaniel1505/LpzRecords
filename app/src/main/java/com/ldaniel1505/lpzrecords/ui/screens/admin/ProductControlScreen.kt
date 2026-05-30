@@ -129,7 +129,10 @@ fun ProductControlScreen(
     }
 
     Scaffold(
-        topBar         = { ProductControlTopBar() },
+        topBar         = { AdminSectionTopBar(
+            title        = "PRODUCTOS",
+            onOpenDrawer = onNavigateBack
+        )},
         containerColor = Color.Transparent
     ) { innerPadding ->
 
@@ -733,67 +736,6 @@ private fun AdminSearchBar(
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  TOP BAR
-//  Diseño Figma: ☰ a la izquierda, "LPZ RECORDS / ADMIN" centrado,
-//  avatar circular "AD" a la derecha.
-// ═══════════════════════════════════════════════════════════════════════════
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ProductControlTopBar() {
-    Column {
-        TopAppBar(
-            navigationIcon = {
-                // Ícono de menú hamburguesa (≡)
-                IconButton(onClick = { /* TODO: abrir drawer de admin si lo implementas */ }) {
-                    Icon(
-                        imageVector        = Icons.Default.Menu,
-                        contentDescription = "Menú",
-                        tint               = LpzDark
-                    )
-                }
-            },
-            title = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text       = "LPZ RECORDS",
-                        fontSize   = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = LpzDark
-                    )
-                    Text(
-                        text       = "ADMIN",
-                        fontSize   = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = LpzRed,
-                        letterSpacing = 1.sp
-                    )
-                }
-            },
-            actions = {
-
-                Box(
-                    modifier = Modifier
-                        .padding(end = 14.dp)
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(LpzDark),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text       = "AD",
-                        fontSize   = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = Color.White
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = LpzBeige)
-        )
-        HorizontalDivider(color = LpzDark.copy(alpha = 0.15f), thickness = 1.dp)
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FONDO: Patrón de rayos retro (sunburst) — igual que FavoritesScreen

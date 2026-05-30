@@ -14,10 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -30,7 +32,7 @@ enum class AdminSection(
     val icon: ImageVector
 ) {
     RESUMEN(   "Resumen",         Icons.Default.Home),
-    PRODUCTOS( "Productos",       Icons.Default.Menu),
+    PRODUCTOS( "Productos",       Icons.Default.List),
     ENVIOS(    "Envíos y Pedidos", Icons.Default.ShoppingCart)
 }
 
@@ -79,10 +81,11 @@ fun AdminDrawerContent(
                 //      contentDescription = null, tint = Color.Unspecified,
                 //      modifier = Modifier.size(28.dp))
                 Icon(
-                    imageVector        = Icons.Default.Menu,
-                    contentDescription = "Logo LPZ",
-                    tint               = Color.White,
-                    modifier           = Modifier.size(26.dp)
+                    painter            = painterResource(id = R.drawable.vinyl),
+                    contentDescription = "Logo LPZ Records",
+                    modifier           = Modifier
+                        .size(38.dp),
+                    tint = Color.Unspecified
                 )
             }
 
@@ -146,7 +149,7 @@ fun AdminDrawerContent(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Icon(
-                imageVector        = Icons.Default.Home,
+                imageVector        = Icons.Default.ExitToApp,
                 contentDescription = "Cerrar sesión",
                 tint               = Color.White.copy(alpha = 0.55f),
                 modifier           = Modifier.size(20.dp)
@@ -224,13 +227,10 @@ fun AdminHostScreen(
                 onSectionSelected  = { section ->
                     selectedSection = section
                     scope.launch { drawerState.close() }
-                    // El drawer se cierra solo al seleccionar
-                    // (puedes añadir: scope.launch { drawerState.close() })
                 },
                 onLogout = onLogout
             )
         },
-        // El scrim (capa oscura detrás) usa el color por defecto de Material3
         scrimColor = Color.Black.copy(alpha = 0.50f)
     ) {
         // ── Contenido según la sección activa ──────────────────────────
