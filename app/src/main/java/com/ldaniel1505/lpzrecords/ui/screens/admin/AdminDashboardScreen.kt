@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,12 +20,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.viewmodel.dashboard.DashboardViewModel
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MODELOS DE DATOS
 //  TODO (BACKEND): Mover a data/model/AdminDashboard.kt cuando el backend esté listo.
 // ═══════════════════════════════════════════════════════════════════════════
+
+
 
 data class RecentOrder(
     val id: Int,
@@ -56,7 +67,8 @@ private val sampleRecentOrders = listOf(
 @Composable
 fun AdminDashboardScreen(
     onNavigateToAllOrders: () -> Unit = {},
-    onNavigateToOrderDetail: (Int) -> Unit = {}
+    onNavigateToOrderDetail: (Int) -> Unit = {},
+    viewModel: DashboardViewModel = viewModel()
 ) {
     // TODO (BACKEND): Obtener métricas del mes desde el ViewModel.
     // val uiState        by adminViewModel.uiState.collectAsState()
@@ -68,6 +80,10 @@ fun AdminDashboardScreen(
     val pendingShipments = 1           // Placeholder
     val totalProducts    = 6           // Placeholder
     val recentOrders     = sampleRecentOrders
+
+    LaunchedEffect(Unit) {
+        viewModel.loadData()
+    }
 
     Scaffold(
         topBar = { AdminTopBar() },
@@ -81,62 +97,58 @@ fun AdminDashboardScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // ── Tarjeta: Ingresos del mes ────────────────────────────────
             RevenueCard(monthlyRevenue = monthlyRevenue)
 
-            // ── Fila de stats: Envíos pendientes + Productos totales ─────
+            Text(text = "Resumen de Usuarios", style = MaterialTheme.typography.headlineSmall)
+
+            // GRÁFICO VICO ESTABLE
+            CartesianChartHost(
+                chart = rememberCartesianChart(
+                    rememberColumnCartesianLayer(),
+                    startAxis = VerticalAxis.rememberStart(title = { "Usuarios" }),
+                    bottomAxis = HorizontalAxis.rememberBottom(
+                        valueFormatter = CartesianValueFormatter { _, x, _ ->
+                            when (x.toInt()) {
+                                0 -> "Total"
+                                1 -> "Hoy"
+                                else -> ""
+                            }
+                        }
+                    )
+                ),
+                modelProducer = viewModel.chartModelProducer,
+                modifier = Modifier.fillMaxWidth().height(200.dp)
+            )
+
+            // ── Fila de stats ─────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 StatCard(
-                    value    = pendingShipments.toString(),
-                    label    = "ENVIOS\nPENDIENTES",
-                    accentColor = Color(0xFFF5F0C0), // amarillo suave
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    value    = totalProducts.toString(),
-                    label    = "PRODUCTOS\nTOTALES",
-                    accentColor = Color(0xFFC0D8F0), // azul suave
+                    value = totalProducts.toString(),
+                    label = "PRODUCTOS\nTOTALES",
+                    accentColor = Color(0xFFC0D8F0),
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // ── Sección: Últimos Pedidos ─────────────────────────────────
+            // ── Sección: Últimos Pedidos ─────────────────────────
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text       = "Ultimos Pedidos",
-                    fontSize   = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color      = LpzDark
-                )
-                Text(
-                    text      = "VER TODOS",
-                    fontSize  = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color     = LpzRed,
-                    modifier  = Modifier.clickable(onClick = onNavigateToAllOrders)
-                )
+                Text(text = "Ultimos Pedidos", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = LpzDark)
+                Text(text = "VER TODOS", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LpzRed, modifier = Modifier.clickable(onClick = onNavigateToAllOrders))
             }
 
-            // ── Lista de pedidos recientes ────────────────────────────────
+            // ── Lista de pedidos ─────────────────────────────────
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 recentOrders.forEach { order ->
-                    // TODO (BACKEND): Cada orden vendrá de adminViewModel.recentOrders
-                    RecentOrderCard(
-                        order   = order,
-                        onClick = { onNavigateToOrderDetail(order.id) }
-                    )
+                    RecentOrderCard(order = order, onClick = { onNavigateToOrderDetail(order.id) })
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -190,6 +202,7 @@ private fun RevenueCard(monthlyRevenue: Double) {
 }
 
 @Composable
+
 private fun StatCard(
     value: String,
     label: String,

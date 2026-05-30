@@ -259,7 +259,7 @@ fun SignUpScreen(
     fun SignUpScreenPreview() {
         SignUpScreen(
             onNavigateToLogin = {},
-            onSignUpSuccess = { false }
+            onSignUpSuccess = {}
         )
     }
 

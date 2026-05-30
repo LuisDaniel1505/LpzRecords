@@ -2,6 +2,7 @@ package com.ldaniel1505.lpzrecords.viewmodel.auth
 
 
 import android.R
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,6 +15,8 @@ import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class AuthViewModel : ViewModel() {
 
@@ -38,25 +41,17 @@ class AuthViewModel : ViewModel() {
                 SupabaseClient.client.auth.signUpWith(Email){
                     this.email = email
                     this.password = password
-                }
-
-                val uid = SupabaseClient.client.auth.currentUserOrNull()?.id
-
-                if(uid != null){
-                    SupabaseClient.client.postgrest["users"].insert(
-                        CreateUserProfile(
-                            id = uid,
-                            name = name,
-                            is_admin = false
-                        )
-                    )
-                    loginSuccessByRole = false
-                } else{
-                    errorMessage = "Error: No se permitio crear el usuario"
+                    this.data = buildJsonObject {
+                        put("name", name)
+                    }
                 }
 
             }catch(e: Exception){
+                Log.e("SupabaseError", "Error Completo: ${e.message}")
                 errorMessage = "Error: ${e.localizedMessage}"
+            }finally {
+                // Quitamos la animación de carga sin importar si falló o funcionó
+                isLoading = false
             }
         }
     }

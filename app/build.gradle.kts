@@ -71,5 +71,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.patrykandpatrick.vico:compose:3.1.0")
+    implementation("com.patrykandpatrick.vico:compose-m3:3.1.0")
+
     //implementation("androidx.compose.material:material-icons-extended:${compose_version}")
 }
