@@ -245,7 +245,7 @@ fun AdminHostScreen(
                     scope.launch { drawerState.open() }
                 }
             )
-            AdminSection.ENVIOS    -> AdminEnviosPlaceholder(
+            AdminSection.ENVIOS    -> OrderControlScreen(
                 onOpenDrawer = {
                     scope.launch { drawerState.open() }
                 }

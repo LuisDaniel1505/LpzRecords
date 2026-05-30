@@ -21,6 +21,7 @@ import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 import com.ldaniel1505.lpzrecords.ui.screens.favorites.FavoritesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.admin.ProductControlScreen
 import com.ldaniel1505.lpzrecords.ui.screens.admin.AdminHostScreen
+import com.ldaniel1505.lpzrecords.ui.screens.admin.AdminHostScreen
 
 @Composable
 fun AppNavigation() {
@@ -41,12 +42,8 @@ fun AppNavigation() {
             LoginScreen(
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                 onLoginSuccess = { isAdmin ->
-                    /*// TODO: Si isAdmin == true, redirigir a pantalla de administrador
-                    navController.navigate(Screen.Catalog.route) {
-                        popUpTo(Screen.Main.route) { inclusive = true }
-                    }*/
                     if (isAdmin) {
-                        navController.navigate(Screen.AdminHost.route) {
+                        navController.navigate(Screen.Admin.route) {
                             popUpTo(Screen.Main.route) { inclusive = true }
                         }
                     } else {
@@ -57,7 +54,15 @@ fun AppNavigation() {
                 }
             )
         }
-
+        composable(Screen.Admin.route) {
+            AdminHostScreen(
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Admin.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Screen.SignUp.route) {
             SignUpScreen(
                 onNavigateToLogin = { navController.popBackStack() },

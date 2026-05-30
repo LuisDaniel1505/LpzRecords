@@ -286,7 +286,7 @@ private fun AddAddressButton(onClick: () -> Unit) {
 @Composable
 private fun AddressesTopBar(onNavigateBack: () -> Unit) {
     TopAppBar(
-        navigationIcon = {                               // ← bloque nuevo
+        navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
