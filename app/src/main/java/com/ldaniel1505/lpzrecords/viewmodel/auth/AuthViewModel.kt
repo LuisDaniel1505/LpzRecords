@@ -1,11 +1,13 @@
 package com.ldaniel1505.lpzrecords.viewmodel.auth
 
 
+import android.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ldaniel1505.lpzrecords.data.model.CreateUserProfile
 import com.ldaniel1505.lpzrecords.data.model.UsuarioPerfil
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
@@ -26,6 +28,38 @@ class AuthViewModel : ViewModel() {
     var loginSuccessByRole by mutableStateOf<Boolean?>(null) // true = admin, false = cliente, null = no logueado
         private set
 
+    fun SignUpUser(name: String, email: String, password: String){
+        isLoading = true
+        errorMessage = null
+
+        viewModelScope.launch{
+            try {
+
+                SupabaseClient.client.auth.signUpWith(Email){
+                    this.email = email
+                    this.password = password
+                }
+
+                val uid = SupabaseClient.client.auth.currentUserOrNull()?.id
+
+                if(uid != null){
+                    SupabaseClient.client.postgrest["users"].insert(
+                        CreateUserProfile(
+                            id = uid,
+                            name = name,
+                            is_admin = false
+                        )
+                    )
+                    loginSuccessByRole = false
+                } else{
+                    errorMessage = "Error: No se permitio crear el usuario"
+                }
+
+            }catch(e: Exception){
+                errorMessage = "Error: ${e.localizedMessage}"
+            }
+        }
+    }
     fun loginUsuario(correo: String, contrasena: String) {
         // Inicializamos estados de carga y limpiamos errores previos
         isLoading = true

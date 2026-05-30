@@ -16,6 +16,7 @@ import com.ldaniel1505.lpzrecords.ui.screens.account.OrdersScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PersonalInfoScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AddressesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodsScreen
+import com.ldaniel1505.lpzrecords.ui.screens.admin.AdminDashboardScreen
 import com.ldaniel1505.lpzrecords.ui.screens.cart.CartScreen
 import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 import com.ldaniel1505.lpzrecords.ui.screens.favorites.FavoritesScreen
@@ -249,6 +250,13 @@ fun AppNavigation() {
                         popUpTo(Screen.AdminHost.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(route = Screen.AdminDashboard.route) {
+            AdminDashboardScreen(
+                onNavigateToAllOrders    = { navController.navigate(Screen.Orders.route) },
+                onNavigateToOrderDetail  = { orderId -> /* navController.navigate(...) */ }
             )
         }
     }
