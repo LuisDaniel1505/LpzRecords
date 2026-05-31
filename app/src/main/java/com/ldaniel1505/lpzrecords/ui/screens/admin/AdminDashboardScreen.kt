@@ -101,24 +101,31 @@ fun AdminDashboardScreen(
 
             Text(text = "Resumen de Usuarios", style = MaterialTheme.typography.headlineSmall)
 
-            // GRÁFICO VICO ESTABLE
-            CartesianChartHost(
-                chart = rememberCartesianChart(
-                    rememberColumnCartesianLayer(),
-                    startAxis = VerticalAxis.rememberStart(title = { "Usuarios" }),
-                    bottomAxis = HorizontalAxis.rememberBottom(
-                        valueFormatter = CartesianValueFormatter { _, x, _ ->
-                            when (x.toInt()) {
-                                0 -> "Total"
-                                1 -> "Hoy"
-                                else -> ""
-                            }
-                        }
-                    )
-                ),
-                modelProducer = viewModel.chartModelProducer,
-                modifier = Modifier.fillMaxWidth().height(200.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
             )
+                {
+                CartesianChartHost(
+                    chart = rememberCartesianChart(
+                        rememberColumnCartesianLayer(),
+                        startAxis = VerticalAxis.rememberStart(title = { "Usuarios" }),
+                        bottomAxis = HorizontalAxis.rememberBottom(
+                            valueFormatter = CartesianValueFormatter { _, x, _ ->
+                                when (x.toInt()) {
+                                    0 -> "Total"
+                                    1 -> "Hoy"
+                                    else -> ""
+                                }
+                            }
+                        )
+                    ),
+                    modelProducer = viewModel.chartModelProducer,
+                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                )
+            }
+            // GRÁFICO VICO ESTABLE
 
             // ── Fila de stats ─────────────────────────────────────
             Row(

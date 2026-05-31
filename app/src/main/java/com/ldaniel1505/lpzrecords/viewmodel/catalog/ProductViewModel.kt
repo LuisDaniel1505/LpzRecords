@@ -31,7 +31,7 @@ class ProductViewModel : ViewModel() {
 
     var selectProduct by mutableStateOf<Product?>(null)
 
-    fun loadProductById(productId: Int) {
+    fun loadProductById(productId: String) {
         isLoading = true
         errorMessage = null
 
@@ -39,20 +39,30 @@ class ProductViewModel : ViewModel() {
             try {
                 val columns = Columns.raw("""
                 id,
-                name,
-                release_date,
+                artist:fk_id_artist (
+                    id,
+                    name,
+                    biography,
+                    musical_genre
+                ),
+                category:fk_id_category (
+                    id,
+                    name
+                ),
+                supplier:fk_id_supplier (
+                    id,
+                    name,
+                    telephone,
+                    email
+                ),
+                title,
                 description,
                 price,
                 stock,
-                artist:fk_artist (
-                    id,
-                    name,
-                    musical_genre
-                ),
-                category:fk_category (
-                    id,
-                    name
-                )
+                img_url,
+                release_date,
+                active,
+                created_at
             """.trimIndent())
 
                 val result = withContext(Dispatchers.IO) {
@@ -83,20 +93,30 @@ class ProductViewModel : ViewModel() {
             try {
                 val columns = Columns.raw("""
                 id,
-                name,
-                release_date,
+                artist:fk_id_artist (
+                    id,
+                    name,
+                    biography,
+                    musical_genre
+                ),
+                category:fk_id_category (
+                    id,
+                    name
+                ),
+                supplier:fk_id_supplier (
+                    id,
+                    name,
+                    telephone,
+                    email
+                ),
+                title,
                 description,
                 price,
                 stock,
-                artist:fk_artist (
-                    id,
-                    name,
-                    musical_genre
-                ),
-                category:fk_category (
-                    id,
-                    name
-                )
+                img_url,
+                release_date,
+                active,
+                created_at
             """.trimIndent())
 
                 val result = withContext(Dispatchers.IO) {

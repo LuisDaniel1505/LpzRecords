@@ -43,7 +43,7 @@ private val sampleReviews: List<Review> = emptyList()
 
 @Composable
 fun ProductDetailScreen(
-    productId: Int,
+    productId: String,
     viewModel: ProductViewModel = viewModel(),
     onNavigateBack: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
@@ -139,7 +139,7 @@ fun ProductDetailScreen(
                 ) {
                     // ── Título del producto ────────────────────────────────
                     Text(
-                        text       = producto.name,
+                        text       = producto.title,
                         fontSize   = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color      = LpzDark,
@@ -159,7 +159,7 @@ fun ProductDetailScreen(
 
                     // ── Precio ─────────────────────────────────────────────
                     Text(
-                        text       = "$${String.format("%.2f", producto.price)}",
+                        text       = producto.price.toString(),
                         fontSize   = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color      = LpzRed
@@ -326,5 +326,5 @@ private fun ReviewCard(review: Review) {
 @Composable
 fun ProductDetailScreenPreview() {
     // Le pasamos un ID de prueba cualquiera para el Preview
-    ProductDetailScreen(productId = 1)
+    ProductDetailScreen(productId = "Ninguno")
 }

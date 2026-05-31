@@ -91,9 +91,9 @@ fun AppNavigation() {
         // ── Detalle del Producto ────────────────────────────────────────────
         composable(
             route     = Screen.ProductDetail.route,
-            arguments = listOf(navArgument("productId") { type = NavType.IntType })
+            arguments = listOf(navArgument("productId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val productId = backStackEntry.arguments?.getInt("productId") ?: return@composable
+            val productId = backStackEntry.arguments?.getString("productId") ?: return@composable
             ProductDetailScreen(
                 productId             = productId,  // Descomentar cuando el ViewModel esté listo
                 onNavigateBack        = { navController.popBackStack() },

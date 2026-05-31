@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -19,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.data.model.Product
 import com.ldaniel1505.lpzrecords.navigation.AppNavigation
@@ -48,7 +51,7 @@ fun CatalogScreen(
     onNavigateToCart: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToProduct: (Int) -> Unit = {}
+    onNavigateToProduct: (String) -> Unit = {}
 ) {
     val viewModel: ProductViewModel = viewModel()
 
@@ -292,16 +295,15 @@ private fun ProductCard(
                     .aspectRatio(1f)
                     .background(Color.Gray)
             ) {
-                /*
-                 * TODO (BACKEND + COIL): Reemplazar este Box con:
-                 *   AsyncImage(
-                 *       model = product.imageUrl,
-                 *       contentDescription = product.name,
-                 *       contentScale = ContentScale.Crop,
-                 *       modifier = Modifier.fillMaxSize()
-                 *   )
-                 * Dependencia: implementation("io.coil-kt:coil-compose:2.6.0")
-                 */
+
+                    AsyncImage(
+                        model = product.img_url,
+                       contentDescription = product.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                   )
+
+
             }
 
             // ── Info del producto ──────────────────────────────────────
@@ -314,7 +316,7 @@ private fun ProductCard(
                 )
             ) {
                 Text(
-                    text = product.name,
+                    text = product.title,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzDark,
@@ -345,15 +347,9 @@ private fun ProductCard(
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.Bottom
                     ) {
-                        Text(
-                            text = "" + product.price,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = LpzDark
-                        )
                         IconButton(
                             onClick = onAddToCartClick,
                             modifier = Modifier.size(32.dp)
