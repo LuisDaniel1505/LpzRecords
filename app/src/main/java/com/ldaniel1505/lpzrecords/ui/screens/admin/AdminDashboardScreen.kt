@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,9 +27,17 @@ import com.ldaniel1505.lpzrecords.viewmodel.dashboard.DashboardViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import com.ldaniel1505.lpzrecords.data.model.PeriodoIngresos
+
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MODELOS DE DATOS
@@ -83,6 +92,7 @@ fun AdminDashboardScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
+        //viewModel.loadIngresosMensuales()  // gráfica de ingresos
     }
 
     Scaffold(
@@ -126,6 +136,8 @@ fun AdminDashboardScreen(
                 )
             }
             // GRÁFICO VICO ESTABLE
+            //Ingresos por mes ───────────────────────
+            RevenueChartSection(viewModel = viewModel)
 
             // ── Fila de stats ─────────────────────────────────────
             Row(
@@ -204,6 +216,220 @@ private fun RevenueCard(monthlyRevenue: Double) {
                     .background(Color(0xFFF0E8E8))
                 // TODO: Reemplazar con un ícono de tendencia o mini-gráfica
             )
+        }
+    }
+}
+@Composable
+private fun RevenueChartSection(viewModel: DashboardViewModel) {
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+        // ── Encabezado ─────────────────────────────────────────────────
+        Text(
+            text       = "Ingresos por Período",
+            fontSize   = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color      = LpzDark
+        )
+
+        //    Cuando el usuario toca uno, llama a seleccionarPeriodo() en
+        //    el ViewModel, que actualiza selectedPeriodo y recarga los datos.
+        Row(
+            modifier              = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            PeriodoIngresos.entries.forEach { periodo ->
+                val estaSeleccionado = viewModel.selectedPeriodo == periodo
+
+                FilterChip(
+                    selected = estaSeleccionado,
+                    onClick  = {
+                        viewModel.seleccionarPeriodo(periodo)
+                    },
+                    label    = {
+                        Text(
+                            text       = periodo.label,
+                            fontSize   = 13.sp,
+                            fontWeight = if (estaSeleccionado) FontWeight.Bold
+                            else FontWeight.Normal
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor  = LpzRed,
+                        selectedLabelColor      = Color.White,
+                        containerColor          = Color.White,
+                        labelColor              = LpzDark
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled          = true,
+                        selected         = estaSeleccionado,
+                        borderColor      = LpzDark.copy(alpha = 0.20f),
+                        selectedBorderColor = LpzRed
+                    )
+                )
+            }
+        }
+
+        // ── Tarjeta con la gráfica ─────────────────────────────────────
+        Card(
+            shape     = RoundedCornerShape(16.dp),
+            colors    = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier  = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier            = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text          = viewModel.selectedPeriodo.descripcion,
+                    fontSize      = 11.sp,
+                    fontWeight    = FontWeight.Bold,
+                    color         = LpzDark.copy(alpha = 0.45f),
+                    letterSpacing = 0.6.sp
+                )
+
+                when {
+                    // ── Estado: Cargando ───────────────────────────────
+                    viewModel.isLoadingRevenue -> {
+                        Box(
+                            modifier         = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color       = LpzRed,
+                                    strokeWidth = 2.5.dp,
+                                    modifier    = Modifier.size(36.dp)
+                                )
+                                Text(
+                                    text     = "Cargando ${viewModel.selectedPeriodo.label.lowercase()}...",
+                                    fontSize = 12.sp,
+                                    color    = LpzDark.copy(alpha = 0.45f)
+                                )
+                            }
+                        }
+                    }
+
+                    // ── Estado: Error ──────────────────────────────────
+                    viewModel.errorRevenue != null -> {
+                        Box(
+                            modifier         = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text      = viewModel.errorRevenue ?: "",
+                                color     = LpzRed,
+                                fontSize  = 13.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    // ── Estado: Sin datos ──────────────────────────────
+                    viewModel.ingresosPeriodo.isEmpty() -> {
+                        Box(
+                            modifier         = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text      = "Sin ventas en este período",
+                                color     = LpzDark.copy(alpha = 0.40f),
+                                fontSize  = 14.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    // ── Estado: Con datos → Gráfica ────────────────────
+                    else -> {
+                        val labels = viewModel.labelsIngresos
+
+                        CartesianChartHost(
+                            chart = rememberCartesianChart(
+                                rememberLineCartesianLayer(),
+                                startAxis  = VerticalAxis.rememberStart(),
+                                bottomAxis = HorizontalAxis.rememberBottom(
+                                    label = rememberAxisLabelComponent(),
+                                    valueFormatter = CartesianValueFormatter { _, x, _ ->
+                                        // x = índice (0, 1, 2 …) → label del período
+                                        labels.getOrElse(x.toInt()) { "" }
+                                    }
+                                )
+                            ),
+                            modelProducer = viewModel.revenueModelProducer,
+                            modifier      = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                        )
+
+                        // ── Fila de resumen debajo de la gráfica ───────
+                        val mejorPeriodo = viewModel.ingresosPeriodo
+                            .maxByOrNull { it.ingresos }
+                        val totalAcum = viewModel.ingresosPeriodo
+                            .sumOf { it.ingresos }
+
+                        HorizontalDivider(
+                            color     = Color.Gray.copy(alpha = 0.12f),
+                            thickness = 1.dp
+                        )
+
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(horizontalAlignment = Alignment.Start) {
+                                Text(
+                                    text          = "MEJOR PERÍODO",
+                                    fontSize      = 10.sp,
+                                    fontWeight    = FontWeight.Bold,
+                                    color         = LpzDark.copy(alpha = 0.45f),
+                                    letterSpacing = 0.6.sp
+                                )
+                                Text(
+                                    text       = mejorPeriodo?.label ?: "—",
+                                    fontSize   = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = LpzDark
+                                )
+                                Text(
+                                    text       = "$${String.format("%,.2f", mejorPeriodo?.ingresos ?: 0.0)}",
+                                    fontSize   = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = LpzRed
+                                )
+                            }
+                            // Total acumulado del período visible
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text          = "TOTAL ${viewModel.selectedPeriodo.label.uppercase()}",
+                                    fontSize      = 10.sp,
+                                    fontWeight    = FontWeight.Bold,
+                                    color         = LpzDark.copy(alpha = 0.45f),
+                                    letterSpacing = 0.6.sp
+                                )
+                                Text(
+                                    text       = "$${String.format("%,.2f", totalAcum)}",
+                                    fontSize   = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = LpzDark
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
