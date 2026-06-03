@@ -26,13 +26,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,11 +71,20 @@ fun CartScreen(
 ) {
     val cartItems by cartViewModel.cartItems.collectAsState()
     val total by cartViewModel.totalPrice.collectAsState()
+    val cartMessage by cartViewModel.cartMessage.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(cartMessage) {
+        val message = cartMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        cartViewModel.consumeCartMessage()
+    }
 
     Scaffold(
         topBar = {
             CartTopBar(onNavigateBack = onNavigateBack)
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             LpzBottomNavBar(
                 selectedTab = null,
@@ -220,6 +233,7 @@ private fun CartItemCard(
 
             QuantityStepper(
                 quantity = item.quantity,
+                canIncrease = item.quantity < item.product.stock,
                 onDecrease = onDecrease,
                 onIncrease = onIncrease
             )
@@ -230,6 +244,7 @@ private fun CartItemCard(
 @Composable
 private fun QuantityStepper(
     quantity: Int,
+    canIncrease: Boolean,
     onDecrease: () -> Unit,
     onIncrease: () -> Unit
 ) {
@@ -259,12 +274,13 @@ private fun QuantityStepper(
 
         IconButton(
             onClick = onIncrease,
+            enabled = canIncrease,
             modifier = Modifier.size(32.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Sumar producto",
-                tint = LpzRed,
+                tint = if (canIncrease) LpzRed else LpzDark.copy(alpha = 0.25f),
                 modifier = Modifier.size(18.dp)
             )
         }

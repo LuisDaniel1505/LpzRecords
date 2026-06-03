@@ -4,18 +4,43 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,7 +56,9 @@ import coil.compose.AsyncImage
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.data.model.Product
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
-import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
+import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
+import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
 
 @Composable
@@ -42,7 +69,9 @@ fun CatalogScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToProduct: (String) -> Unit = {},
-    onAddToCart: (Product) -> Unit = {}
+    favoriteProductIds: Set<String> = emptySet(),
+    onAddToCart: (Product) -> Unit = {},
+    onToggleFavorite: (Product) -> Unit = {}
 ) {
     val viewModel: ProductViewModel = viewModel()
 
@@ -85,7 +114,7 @@ fun CatalogScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "CATEGORÍAS",
+                text = "CATEGORIAS",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = LpzRed
@@ -156,12 +185,9 @@ fun CatalogScreen(
                         items(products, key = { product -> product.id }) { product ->
                             ProductCard(
                                 product = product,
-                                onFavoriteClick = {
-                                    // TODO (BACKEND): conectar favoritos en fase posterior.
-                                },
-                                onAddToCartClick = {
-                                    onAddToCart(product)
-                                },
+                                isFavorite = favoriteProductIds.contains(product.id),
+                                onFavoriteClick = { onToggleFavorite(product) },
+                                onAddToCartClick = { onAddToCart(product) },
                                 onProductClick = { onNavigateToProduct(product.id) }
                             )
                         }
@@ -182,7 +208,7 @@ private fun CatalogTopBar() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "CATÁLOGO",
+                    text = "CATALOGO",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzDark
@@ -267,6 +293,7 @@ private fun CategoryRow(
 @Composable
 private fun ProductCard(
     product: Product,
+    isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
     onAddToCartClick: () -> Unit,
     onProductClick: () -> Unit
@@ -291,6 +318,22 @@ private fun ProductCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(34.dp)
+                        .background(Color.White.copy(alpha = 0.90f), RoundedCornerShape(50))
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                        tint = if (isFavorite) LpzRed else LpzDark,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
 
             Column(
@@ -317,7 +360,7 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.category?.name ?: "Sin categoría",
+                    text = product.category?.name ?: "Sin categoria",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,
@@ -340,7 +383,7 @@ private fun ProductCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = "Añadir al carrito",
+                                contentDescription = "Agregar al carrito",
                                 tint = LpzDark,
                                 modifier = Modifier.size(17.dp)
                             )

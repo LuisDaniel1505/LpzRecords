@@ -1,6 +1,8 @@
 package com.ldaniel1505.lpzrecords.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,8 +11,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ldaniel1505.lpzrecords.ui.screens.MainScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AccountScreen
+import com.ldaniel1505.lpzrecords.ui.screens.account.AddressFormScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AddressesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.OrdersScreen
+import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodFormScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodsScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PersonalInfoScreen
 import com.ldaniel1505.lpzrecords.ui.screens.admin.AdminHostScreen
@@ -22,12 +26,24 @@ import com.ldaniel1505.lpzrecords.ui.screens.catalog.ProductDetailScreen
 import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 import com.ldaniel1505.lpzrecords.ui.screens.favorites.FavoritesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.search.SearchScreen
+import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.checkout.CheckoutViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.favorites.FavoritesViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val cartViewModel: CartViewModel = viewModel()
+    val checkoutViewModel: CheckoutViewModel = viewModel()
+    val favoritesViewModel: FavoritesViewModel = viewModel()
+    val profileViewModel: ProfileViewModel = viewModel()
+    val addressViewModel: AddressViewModel = viewModel()
+    val paymentMethodsViewModel: PaymentMethodsViewModel = viewModel()
+    val favoriteProducts by favoritesViewModel.favoriteProducts.collectAsState()
+    val favoriteProductIds = favoriteProducts.map { it.id }.toSet()
 
     fun navigateToCatalog() {
         navController.navigate(Screen.Catalog.route) {
@@ -100,7 +116,9 @@ fun AppNavigation() {
                 onNavigateToProduct = { productId ->
                     navController.navigate(Screen.ProductDetail.createRoute(productId))
                 },
-                onAddToCart = { product -> cartViewModel.addProduct(product) }
+                favoriteProductIds = favoriteProductIds,
+                onAddToCart = { product -> cartViewModel.addProduct(product) },
+                onToggleFavorite = { product -> favoritesViewModel.toggleFavorite(product) }
             )
         }
 
@@ -109,7 +127,10 @@ fun AppNavigation() {
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
-                onNavigateToProfile = { navController.navigate(Screen.Account.route) }
+                onNavigateToProfile = { navController.navigate(Screen.Account.route) },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                }
             )
         }
 
@@ -130,12 +151,15 @@ fun AppNavigation() {
                 onBuyNow = { product ->
                     cartViewModel.addProductIfMissing(product)
                     navController.navigate(Screen.Checkout.route)
-                }
+                },
+                favoriteProductIds = favoriteProductIds,
+                onToggleFavorite = { product -> favoritesViewModel.toggleFavorite(product) }
             )
         }
 
         composable(Screen.Account.route) {
             AccountScreen(
+                profileViewModel = profileViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
@@ -145,8 +169,15 @@ fun AppNavigation() {
                 onNavigateToAddresses = { navController.navigate(Screen.Addresses.route) },
                 onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
                 onLogout = {
+                    cartViewModel.clearCart()
+                    favoritesViewModel.clearFavorites()
+                    checkoutViewModel.resetCheckoutState()
+                    profileViewModel.clearProfile()
+                    addressViewModel.clearState()
+                    paymentMethodsViewModel.clearState()
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Catalog.route) { inclusive = true }
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -164,6 +195,7 @@ fun AppNavigation() {
 
         composable(Screen.PersonalInfo.route) {
             PersonalInfoScreen(
+                profileViewModel = profileViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
@@ -174,21 +206,39 @@ fun AppNavigation() {
 
         composable(Screen.Addresses.route) {
             AddressesScreen(
+                addressViewModel = addressViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
-                onNavigateToProfile = { navController.popBackStack() }
+                onNavigateToProfile = { navController.popBackStack() },
+                onNavigateToAddressForm = { navController.navigate(Screen.AddressForm.route) }
+            )
+        }
+
+        composable(Screen.AddressForm.route) {
+            AddressFormScreen(
+                addressViewModel = addressViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.PaymentMethods.route) {
             PaymentMethodsScreen(
+                paymentMethodsViewModel = paymentMethodsViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
-                onNavigateToProfile = { navController.popBackStack() }
+                onNavigateToProfile = { navController.popBackStack() },
+                onNavigateToPaymentMethodForm = { navController.navigate(Screen.PaymentMethodForm.route) }
+            )
+        }
+
+        composable(Screen.PaymentMethodForm.route) {
+            PaymentMethodFormScreen(
+                paymentMethodsViewModel = paymentMethodsViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -206,6 +256,10 @@ fun AppNavigation() {
 
         composable(Screen.Checkout.route) {
             CheckoutScreen(
+                checkoutViewModel = checkoutViewModel,
+                cartViewModel = cartViewModel,
+                addressViewModel = addressViewModel,
+                paymentMethodsViewModel = paymentMethodsViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
@@ -215,7 +269,8 @@ fun AppNavigation() {
                 onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
                 onConfirmOrder = {
                     navController.navigate(Screen.Orders.route) {
-                        popUpTo(Screen.Cart.route) { inclusive = true }
+                        popUpTo(Screen.Checkout.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -223,10 +278,16 @@ fun AppNavigation() {
 
         composable(Screen.Favorites.route) {
             FavoritesScreen(
+                favoritesViewModel = favoritesViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
-                onNavigateToProfile = { navController.navigate(Screen.Account.route) }
+                onNavigateToProfile = { navController.navigate(Screen.Account.route) },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                },
+                onAddToCart = { product -> cartViewModel.addProduct(product) },
+                onToggleFavorite = { product -> favoritesViewModel.toggleFavorite(product) }
             )
         }
     }

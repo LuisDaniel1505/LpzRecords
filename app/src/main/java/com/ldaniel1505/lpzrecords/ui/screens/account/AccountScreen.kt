@@ -3,16 +3,43 @@ package com.ldaniel1505.lpzrecords.ui.screens.account
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,16 +48,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
-import com.ldaniel1505.lpzrecords.ui.theme.*
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PANTALLA PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════════════
+import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
+import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
+import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 
 @Composable
 fun AccountScreen(
+    profileViewModel: ProfileViewModel = viewModel(),
     onNavigateToHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
@@ -42,26 +70,33 @@ fun AccountScreen(
     onLogout: () -> Unit = {}
 ) {
     var notificationsEnabled by remember { mutableStateOf(true) }
+    val profileState by profileViewModel.uiState.collectAsState()
 
-    // TODO (BACKEND): Obtener datos del usuario autenticado desde el ViewModel.
-    // val userState by accountViewModel.userState.collectAsState()
-    // val userName    = userState.fullName
-    // val userInitial = userState.fullName.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-    // val purchaseCount = userState.purchaseCount
-    val userName      = "Diego Careaga" // Placeholder
-    val userInitial   = "D"             // Placeholder
-    val purchaseCount = 2               // TODO (BACKEND): accountViewModel.purchaseCount
+    LaunchedEffect(Unit) {
+        profileViewModel.loadProfile()
+    }
+
+    LaunchedEffect(profileState.logoutSuccess) {
+        if (profileState.logoutSuccess) {
+            profileViewModel.consumeLogoutSuccess()
+            onLogout()
+        }
+    }
+
+    val userName = profileState.displayName
+    val userInitial = profileState.initials
+    val purchaseCount = 0
 
     Scaffold(
         topBar = { AccountTopBar() },
         bottomBar = {
             LpzBottomNavBar(
                 selectedTab = BottomNavTab.PROFILE,
-                onHome      = onNavigateToHome,
-                onSearch    = onNavigateToSearch,
-                onCart      = onNavigateToCart,
+                onHome = onNavigateToHome,
+                onSearch = onNavigateToSearch,
+                onCart = onNavigateToCart,
                 onFavorites = onNavigateToFavorites,
-                onProfile   = { /* Pantalla activa, no navegar */ }
+                onProfile = {}
             )
         },
         containerColor = LpzBeige
@@ -76,7 +111,6 @@ fun AccountScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Avatar ────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(84.dp)
@@ -84,16 +118,6 @@ fun AccountScreen(
                     .background(LpzDark),
                 contentAlignment = Alignment.Center
             ) {
-                /*
-                 * TODO (BACKEND + COIL): Mostrar foto de perfil del usuario.
-                 *   AsyncImage(
-                 *       model = userState.photoUrl,
-                 *       contentDescription = userState.fullName,
-                 *       contentScale = ContentScale.Crop,
-                 *       modifier = Modifier.fillMaxSize().clip(CircleShape)
-                 *   )
-                 * Dependencia: implementation("io.coil-kt:coil-compose:2.6.0")
-                 */
                 Text(
                     text = userInitial,
                     fontSize = 38.sp,
@@ -104,7 +128,6 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // ── Nombre del usuario ────────────────────────────────────
             Text(
                 text = userName,
                 fontSize = 21.sp,
@@ -112,9 +135,17 @@ fun AccountScreen(
                 color = LpzDark
             )
 
+            profileState.errorMessage?.let { message ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = message,
+                    fontSize = 12.sp,
+                    color = LpzRed
+                )
+            }
+
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── Sección: Mi Actividad ─────────────────────────────────
             SectionHeader(title = "MI ACTIVIDAD")
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -157,7 +188,6 @@ fun AccountScreen(
                             color = LpzDark
                         )
                     }
-                    // TODO (BACKEND): Reemplazar purchaseCount con dato real del ViewModel
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -169,7 +199,7 @@ fun AccountScreen(
                             color = LpzDark.copy(alpha = 0.55f)
                         )
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = "Ver mis compras",
                             tint = LpzDark.copy(alpha = 0.45f),
                             modifier = Modifier.size(22.dp)
@@ -180,7 +210,6 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── Sección: Configuración ────────────────────────────────
             SectionHeader(title = "CONFIGURACION")
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -192,52 +221,46 @@ fun AccountScreen(
             ) {
                 Column {
                     ConfigRow(
-                        title    = "Información personal",
-                        subtitle = "Nombre, correo, teléfono",
-                        onClick  = onNavigateToPersonalInfo
+                        title = "Informacion personal",
+                        subtitle = "Nombre, correo, telefono",
+                        onClick = onNavigateToPersonalInfo
                     )
                     RowDivider()
                     ConfigRow(
-                        title    = "Direcciones de envío",
+                        title = "Direcciones de envio",
                         subtitle = "Selecciona puntos de entrega",
-                        onClick  = onNavigateToAddresses
+                        onClick = onNavigateToAddresses
                     )
                     RowDivider()
                     ConfigRow(
-                        title    = "Métodos de pago",
+                        title = "Metodos de pago",
                         subtitle = "Tarjetas guardadas",
-                        onClick  = onNavigateToPaymentMethods
+                        onClick = onNavigateToPaymentMethods
                     )
                     RowDivider()
                     ConfigRowWithSwitch(
-                        title    = "Notificaciones",
-                        subtitle = "Avisos de ofertas y envíos",
-                        checked  = notificationsEnabled,
-                        onCheckedChange = {
-                            notificationsEnabled = it
-                            // TODO (BACKEND): accountViewModel.updateNotificationPreference(it)
-                        }
+                        title = "Notificaciones",
+                        subtitle = "Avisos de ofertas y envios",
+                        checked = notificationsEnabled,
+                        onCheckedChange = { notificationsEnabled = it }
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Botón Cerrar Sesión ───────────────────────────────────
             OutlinedButton(
-                onClick = {
-                    // TODO (BACKEND): accountViewModel.logout()
-                    onLogout()
-                },
+                onClick = { profileViewModel.logout() },
+                enabled = !profileState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape  = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(1.5.dp, LpzRed),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = LpzRed)
             ) {
                 Text(
-                    text = "CERRAR SESIÓN",
+                    text = if (profileState.isLoading) "CERRANDO..." else "CERRAR SESION",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -248,10 +271,6 @@ fun AccountScreen(
         }
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENTES INTERNOS
-// ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun SectionHeader(title: String) {
@@ -292,12 +311,6 @@ private fun ConfigRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f)
         ) {
-            /*
-             * TODO: Reemplazar Box por el icono real de cada fila:
-             *   Icon(painter = painterResource(R.drawable.ic_person), ...)
-             *   Icon(painter = painterResource(R.drawable.ic_location), ...)
-             *   Icon(painter = painterResource(R.drawable.ic_credit_card), ...)
-             */
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -319,7 +332,7 @@ private fun ConfigRow(
             }
         }
         Icon(
-            imageVector = Icons.Default.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Ir a $title",
             tint = LpzDark.copy(alpha = 0.40f),
             modifier = Modifier.size(22.dp)
@@ -346,7 +359,6 @@ private fun ConfigRowWithSwitch(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f)
         ) {
-            // TODO: Reemplazar con Icons.Outlined.Notifications
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -371,18 +383,14 @@ private fun ConfigRowWithSwitch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor   = Color.White,
-                checkedTrackColor   = LpzRed,
+                checkedThumbColor = Color.White,
+                checkedTrackColor = LpzRed,
                 uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = Color.Gray.copy(alpha = 0.35f)
             )
         )
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  TOP BAR
-// ═══════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

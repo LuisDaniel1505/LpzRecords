@@ -1,76 +1,73 @@
 package com.ldaniel1505.lpzrecords.ui.screens.checkout
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.data.model.CartItem
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
-import com.ldaniel1505.lpzrecords.ui.theme.*
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  MODELOS DE DATOS LOCALES
-//  TODO (BACKEND): Estos datos vendrán del ViewModel, que los obtiene de
-//  la sesión del usuario y del carrito activo.
-// ═══════════════════════════════════════════════════════════════════════════
-
-data class CheckoutAddress(
-    val id: Int,
-    val nickname: String,
-    val isDefault: Boolean
-)
-
-data class CheckoutCard(
-    val id: Int,
-    val network: String,        // "VISA", "MASTERCARD", etc.
-    val lastFourDigits: String
-)
-
-data class CheckoutOrderItem(
-    val productName: String,
-    val price: Double
-)
-
-// ── Datos de ejemplo — eliminar cuando el ViewModel provea datos reales ──────
-private val sampleAddress = CheckoutAddress(
-    id        = 1,
-    nickname  = "Casa (Predeterminada)",
-    isDefault = true
-)
-
-private val sampleCard = CheckoutCard(
-    id             = 1,
-    network        = "VISA",
-    lastFourDigits = "1234"
-)
-
-private val sampleOrderItems = listOf(
-    CheckoutOrderItem(productName = "Disco 1", price = 50.00)
-)
-
-private const val SHIPPING_COST = 5.00
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PANTALLA PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════════════
+import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
+import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
+import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.checkout.CheckoutViewModel
+import java.util.Locale
 
 @Composable
 fun CheckoutScreen(
+    checkoutViewModel: CheckoutViewModel = viewModel(),
+    cartViewModel: CartViewModel = viewModel(),
+    addressViewModel: AddressViewModel = viewModel(),
+    paymentMethodsViewModel: PaymentMethodsViewModel = viewModel(),
     onNavigateBack: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -80,31 +77,36 @@ fun CheckoutScreen(
     onNavigateToPaymentMethods: () -> Unit = {},
     onConfirmOrder: () -> Unit = {}
 ) {
-    // TODO (BACKEND): Cargar desde checkoutViewModel.uiState.collectAsState()
-    // val uiState      by checkoutViewModel.uiState.collectAsState()
-    // val address      = uiState.selectedAddress
-    // val card         = uiState.selectedCard
-    // val orderItems   = uiState.items
-    // val shippingCost = uiState.shippingCost
-    val address    = sampleAddress
-    val card       = sampleCard
-    val orderItems = sampleOrderItems
+    LaunchedEffect(cartViewModel) {
+        checkoutViewModel.loadFromCart(cartViewModel)
+    }
 
-    val subtotal = orderItems.sumOf { it.price }
-    val total    = subtotal + SHIPPING_COST
+    LaunchedEffect(Unit) {
+        addressViewModel.fetchAddresses()
+        paymentMethodsViewModel.fetchPaymentMethods()
+        checkoutViewModel.loadCustomerData(addressViewModel, paymentMethodsViewModel)
+    }
 
-    // Controla el diálogo de confirmación
+    val uiState by checkoutViewModel.uiState.collectAsState()
     var showConfirmDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.orderSuccess) {
+        if (uiState.orderSuccess) {
+            cartViewModel.clearCart()
+            checkoutViewModel.resetOrderSuccess()
+            onConfirmOrder()
+        }
+    }
 
     if (showConfirmDialog) {
         ConfirmOrderDialog(
-            total      = total,
-            onConfirm  = {
+            total = uiState.total,
+            isSubmitting = uiState.isSubmitting,
+            onConfirm = {
                 showConfirmDialog = false
-                // TODO (BACKEND): checkoutViewModel.placeOrder() → esperar respuesta antes de navegar
-                onConfirmOrder()
+                checkoutViewModel.confirmarCompra()
             },
-            onDismiss  = { showConfirmDialog = false }
+            onDismiss = { showConfirmDialog = false }
         )
     }
 
@@ -114,12 +116,12 @@ fun CheckoutScreen(
         },
         bottomBar = {
             LpzBottomNavBar(
-                selectedTab   = null,
-                onHome        = onNavigateToHome,
-                onSearch      = onNavigateToSearch,
-                onCart        = onNavigateBack, // Regresa al carrito
-                onFavorites   = onNavigateToFavorites,
-                onProfile     = onNavigateToProfile
+                selectedTab = null,
+                onHome = onNavigateToHome,
+                onSearch = onNavigateToSearch,
+                onCart = onNavigateBack,
+                onFavorites = onNavigateToFavorites,
+                onProfile = onNavigateToProfile
             )
         },
         containerColor = LpzBeige
@@ -129,7 +131,6 @@ fun CheckoutScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ── Secciones scrolleables ─────────────────────────────────
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -139,103 +140,112 @@ fun CheckoutScreen(
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // ── Tarjeta: Dirección de envío ────────────────────────
                 SelectionCard(
-                    label       = "ENVIAR A",
-                    onClick     = onNavigateToAddresses
+                    label = "ENVIAR A",
+                    onClick = onNavigateToAddresses
                 ) {
                     Row(
-                        verticalAlignment     = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier              = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Placeholder de ícono de dirección
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(50))
                                 .background(Color(0xFFE8C4B8))
-                            // TODO (BACKEND + COIL): Reemplazar por ícono de mapa o foto
                         )
-                        Text(
-                            text       = address.nickname,
-                            fontSize   = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color      = LpzDark,
-                            modifier   = Modifier.weight(1f)
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = uiState.selectedAddress.label,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = LpzDark
+                            )
+                            Text(
+                                text = uiState.selectedAddress.summary,
+                                fontSize = 13.sp,
+                                color = LpzDark.copy(alpha = 0.58f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Icon(
-                            imageVector        = Icons.Default.KeyboardArrowRight,
-                            contentDescription = "Cambiar dirección",
-                            tint               = LpzDark.copy(alpha = 0.40f)
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Cambiar direccion",
+                            tint = LpzDark.copy(alpha = 0.40f)
                         )
                     }
                 }
 
-                // ── Tarjeta: Método de pago ────────────────────────────
                 SelectionCard(
-                    label   = "PAGAR CON",
+                    label = "PAGAR CON",
                     onClick = onNavigateToPaymentMethods
                 ) {
                     Row(
-                        verticalAlignment     = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier              = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Placeholder visual de tarjeta bancaria
                         Box(
                             modifier = Modifier
-                                .size(42.dp, 28.dp)
+                                .size(width = 42.dp, height = 28.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(LpzDark)
-                            // TODO: Reemplazar con logo de red (VISA/MC) usando painterResource
                         )
                         Text(
-                            text       = "${card.network} terminación ${card.lastFourDigits}",
-                            fontSize   = 16.sp,
+                            text = uiState.selectedPaymentMethod.displayName,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color      = LpzDark,
-                            modifier   = Modifier.weight(1f)
+                            color = LpzDark,
+                            modifier = Modifier.weight(1f)
                         )
                         Icon(
-                            imageVector        = Icons.Default.KeyboardArrowRight,
-                            contentDescription = "Cambiar método de pago",
-                            tint               = LpzDark.copy(alpha = 0.40f)
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Cambiar metodo de pago",
+                            tint = LpzDark.copy(alpha = 0.40f)
                         )
                     }
                 }
 
-                // ── Tarjeta: Resumen del pedido ────────────────────────
                 OrderSummaryCard(
-                    items        = orderItems,
-                    subtotal     = subtotal,
-                    shippingCost = SHIPPING_COST,
-                    total        = total
+                    items = uiState.items,
+                    subtotal = uiState.subtotal,
+                    shippingCost = uiState.shippingCost,
+                    total = uiState.total
                 )
+
+                uiState.errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        fontSize = 13.sp,
+                        color = LpzRed
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // ── Botón Confirmar (fijo en la parte inferior) ────────────
             Surface(
-                color           = LpzBeige,
+                color = LpzBeige,
                 shadowElevation = 8.dp,
-                tonalElevation  = 0.dp
+                tonalElevation = 0.dp
             ) {
                 Button(
-                    onClick  = { showConfirmDialog = true },
+                    onClick = { showConfirmDialog = true },
+                    enabled = uiState.items.isNotEmpty() && !uiState.isSubmitting,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 16.dp)
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = LpzRed),
-                    shape  = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text          = "CONFIRMAR",
-                        fontSize      = 17.sp,
-                        fontWeight    = FontWeight.Bold,
-                        color         = Color.White,
+                        text = if (uiState.isSubmitting) "PROCESANDO" else "CONFIRMAR ORDEN",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
                         letterSpacing = 1.sp
                     )
                 }
@@ -244,14 +254,6 @@ fun CheckoutScreen(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENTES INTERNOS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Tarjeta genérica con etiqueta superior y contenido personalizable.
- * Usada tanto para "ENVIAR A" como para "PAGAR CON".
- */
 @Composable
 private fun SelectionCard(
     label: String,
@@ -259,21 +261,21 @@ private fun SelectionCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        onClick   = onClick,
-        shape     = RoundedCornerShape(14.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier  = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text          = label,
-                fontSize      = 11.sp,
-                fontWeight    = FontWeight.Bold,
-                color         = LpzDark.copy(alpha = 0.45f),
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark.copy(alpha = 0.45f),
                 letterSpacing = 0.8.sp
             )
             content()
@@ -283,84 +285,100 @@ private fun SelectionCard(
 
 @Composable
 private fun OrderSummaryCard(
-    items: List<CheckoutOrderItem>,
+    items: List<CartItem>,
     subtotal: Double,
     shippingCost: Double,
     total: Double
 ) {
     Card(
-        shape     = RoundedCornerShape(14.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier  = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text          = "RESUMEN",
-                fontSize      = 11.sp,
-                fontWeight    = FontWeight.Bold,
-                color         = LpzDark.copy(alpha = 0.45f),
+                text = "RESUMEN",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark.copy(alpha = 0.45f),
                 letterSpacing = 0.8.sp
             )
 
-            // ── Ítems del pedido ───────────────────────────────────────
-            // TODO (BACKEND): Cada item vendrá de checkoutViewModel.uiState.items
-            items.forEach { item ->
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text       = item.productName,
-                        fontSize   = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = LpzDark
-                    )
-                    Text(
-                        text       = "$${String.format("%.2f", item.price)}",
-                        fontSize   = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = LpzRed
-                    )
+            if (items.isEmpty()) {
+                Text(
+                    text = "No hay productos en el carrito.",
+                    fontSize = 14.sp,
+                    color = LpzDark.copy(alpha = 0.55f)
+                )
+            } else {
+                items.forEach { item ->
+                    SummaryItemRow(item = item)
                 }
             }
 
             HorizontalDivider(
-                color     = Color.Gray.copy(alpha = 0.12f),
+                color = Color.Gray.copy(alpha = 0.12f),
                 thickness = 1.dp
             )
 
-            // ── Subtotal ───────────────────────────────────────────────
             SummaryRow(
                 label = "Subtotal",
-                value = "$${String.format("%.2f", subtotal)}",
+                value = money(subtotal),
                 isHighlighted = false
             )
 
-            // ── Envío ──────────────────────────────────────────────────
-            // TODO (BACKEND): El costo de envío vendrá del servidor según la dirección
             SummaryRow(
-                label = "Envío",
-                value = "$${String.format("%.2f", shippingCost)}",
+                label = "Envio",
+                value = money(shippingCost),
                 isHighlighted = false
             )
 
             HorizontalDivider(
-                color     = Color.Gray.copy(alpha = 0.12f),
+                color = Color.Gray.copy(alpha = 0.12f),
                 thickness = 1.dp
             )
 
-            // ── Total ──────────────────────────────────────────────────
             SummaryRow(
-                label         = "Total a pagar",
-                value         = "$${String.format("%.2f", total)}",
+                label = "Total a pagar",
+                value = money(total),
                 isHighlighted = true
             )
         }
+    }
+}
+
+@Composable
+private fun SummaryItemRow(item: CartItem) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.product.title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${item.quantity} x ${item.selectedFormat}",
+                fontSize = 12.sp,
+                color = LpzDark.copy(alpha = 0.55f)
+            )
+        }
+        Text(
+            text = money(item.product.price * item.quantity),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = LpzRed
+        )
     }
 }
 
@@ -371,21 +389,21 @@ private fun SummaryRow(
     isHighlighted: Boolean
 ) {
     Row(
-        modifier              = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment     = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text       = label,
-            fontSize   = if (isHighlighted) 15.sp else 13.sp,
+            text = label,
+            fontSize = if (isHighlighted) 15.sp else 13.sp,
             fontWeight = if (isHighlighted) FontWeight.Bold else FontWeight.Normal,
-            color      = if (isHighlighted) LpzDark else LpzDark.copy(alpha = 0.55f)
+            color = if (isHighlighted) LpzDark else LpzDark.copy(alpha = 0.55f)
         )
         Text(
-            text       = value,
-            fontSize   = if (isHighlighted) 15.sp else 13.sp,
+            text = value,
+            fontSize = if (isHighlighted) 15.sp else 13.sp,
             fontWeight = if (isHighlighted) FontWeight.Bold else FontWeight.Normal,
-            color      = if (isHighlighted) LpzRed else LpzDark.copy(alpha = 0.55f)
+            color = if (isHighlighted) LpzRed else LpzDark.copy(alpha = 0.55f)
         )
     }
 }
@@ -393,49 +411,52 @@ private fun SummaryRow(
 @Composable
 private fun ConfirmOrderDialog(
     total: Double,
+    isSubmitting: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor   = Color.White,
+        containerColor = Color.White,
         title = {
             Text(
-                text       = "Confirmar pedido",
+                text = "Confirmar pedido",
                 fontWeight = FontWeight.Bold,
-                color      = LpzDark
+                color = LpzDark
             )
         },
         text = {
             Text(
-                text     = "¿Deseas realizar el pago de $${String.format("%.2f", total)}? Esta acción procesará tu orden.",
-                color    = LpzDark.copy(alpha = 0.75f),
+                text = "Deseas confirmar esta orden por ${money(total)}?",
+                color = LpzDark.copy(alpha = 0.75f),
                 fontSize = 14.sp
             )
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            TextButton(
+                enabled = !isSubmitting,
+                onClick = onConfirm
+            ) {
                 Text(
-                    text       = "Confirmar",
-                    color      = LpzRed,
+                    text = "Confirmar",
+                    color = LpzRed,
                     fontWeight = FontWeight.Bold
                 )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                enabled = !isSubmitting,
+                onClick = onDismiss
+            ) {
                 Text(
-                    text  = "Cancelar",
+                    text = "Cancelar",
                     color = LpzDark.copy(alpha = 0.6f)
                 )
             }
         }
     )
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  TOP BAR
-// ═══════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -444,30 +465,30 @@ private fun CheckoutTopBar(onNavigateBack: () -> Unit) {
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Regresar",
-                    tint               = LpzDark
+                    tint = LpzDark
                 )
             }
         },
         title = {
             Box(
-                modifier         = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text       = "PAGAR",
-                    fontSize   = 22.sp,
+                    text = "PAGAR",
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = LpzDark
+                    color = LpzDark
                 )
             }
         },
         actions = {
             Icon(
-                painter            = painterResource(id = R.drawable.vinyl),
+                painter = painterResource(id = R.drawable.vinyl),
                 contentDescription = "Logo LPZ Records",
-                modifier           = Modifier
+                modifier = Modifier
                     .padding(end = 16.dp)
                     .size(32.dp),
                 tint = Color.Unspecified
@@ -477,9 +498,9 @@ private fun CheckoutTopBar(onNavigateBack: () -> Unit) {
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREVIEW
-// ═══════════════════════════════════════════════════════════════════════════
+private fun money(value: Double): String {
+    return "$${String.format(Locale.US, "%.2f", value)}"
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

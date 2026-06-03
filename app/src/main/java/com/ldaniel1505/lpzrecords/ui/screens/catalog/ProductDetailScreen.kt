@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,7 +58,9 @@ fun ProductDetailScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onAddToCart: (Product) -> Unit = {},
-    onBuyNow: (Product) -> Unit = {}
+    onBuyNow: (Product) -> Unit = {},
+    favoriteProductIds: Set<String> = emptySet(),
+    onToggleFavorite: (Product) -> Unit = {}
 ) {
     LaunchedEffect(productId) {
         viewModel.loadProductById(productId)
@@ -91,7 +95,9 @@ fun ProductDetailScreen(
             product != null -> {
                 ProductDetailContent(
                     product = product,
+                    isFavorite = favoriteProductIds.contains(product.id),
                     onNavigateBack = onNavigateBack,
+                    onToggleFavorite = { onToggleFavorite(product) },
                     onAddToCart = {
                         onAddToCart(product)
                         onNavigateToCart()
@@ -106,7 +112,9 @@ fun ProductDetailScreen(
 @Composable
 private fun ProductDetailContent(
     product: Product,
+    isFavorite: Boolean,
     onNavigateBack: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onAddToCart: () -> Unit,
     onBuyNow: () -> Unit
 ) {
@@ -132,6 +140,19 @@ private fun ProductDetailContent(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Regresar",
                     tint = Color.White
+                )
+            }
+
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 8.dp)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                    tint = if (isFavorite) LpzRed else Color.White
                 )
             }
 
@@ -200,6 +221,7 @@ private fun ProductDetailContent(
             ) {
                 OutlinedButton(
                     onClick = onAddToCart,
+                    enabled = product.stock > 0,
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp),
@@ -216,6 +238,7 @@ private fun ProductDetailContent(
 
                 Button(
                     onClick = onBuyNow,
+                    enabled = product.stock > 0,
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp),

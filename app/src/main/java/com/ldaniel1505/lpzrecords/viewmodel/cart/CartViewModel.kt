@@ -14,6 +14,9 @@ class CartViewModel : ViewModel() {
     private val _totalPrice = MutableStateFlow(0.0)
     val totalPrice: StateFlow<Double> = _totalPrice.asStateFlow()
 
+    private val _cartMessage = MutableStateFlow<String?>(null)
+    val cartMessage: StateFlow<String?> = _cartMessage.asStateFlow()
+
     fun addProduct(product: Product) {
         addProduct(product, product.category?.name ?: DEFAULT_FORMAT)
     }
@@ -33,6 +36,11 @@ class CartViewModel : ViewModel() {
     }
 
     fun addProduct(product: Product, selectedFormat: String) {
+        if (product.stock <= 0) {
+            _cartMessage.value = "Este producto no tiene stock disponible."
+            return
+        }
+
         val currentItems = _cartItems.value.toMutableList()
         val existingIndex = currentItems.indexOfFirst {
             it.product.id == product.id && it.selectedFormat == selectedFormat
@@ -40,6 +48,10 @@ class CartViewModel : ViewModel() {
 
         if (existingIndex >= 0) {
             val existingItem = currentItems[existingIndex]
+            if (existingItem.quantity >= product.stock) {
+                _cartMessage.value = "Solo hay ${product.stock} unidades disponibles."
+                return
+            }
             currentItems[existingIndex] = existingItem.copy(quantity = existingItem.quantity + 1)
         } else {
             currentItems.add(CartItem(product = product, quantity = 1, selectedFormat = selectedFormat))
@@ -72,6 +84,10 @@ class CartViewModel : ViewModel() {
 
     fun clearCart() {
         publishCart(emptyList())
+    }
+
+    fun consumeCartMessage() {
+        _cartMessage.value = null
     }
 
     private fun publishCart(items: List<CartItem>) {
