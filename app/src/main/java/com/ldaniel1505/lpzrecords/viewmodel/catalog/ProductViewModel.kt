@@ -26,9 +26,6 @@ class ProductViewModel : ViewModel() {
     var products by mutableStateOf<List<Product>>(emptyList())
         private set
 
-    private val _productState = MutableStateFlow<Product?>(null)
-    val productState: StateFlow<Product?> = _productState
-
     var selectProduct by mutableStateOf<Product?>(null)
 
     fun loadProductById(productId: String) {
@@ -85,6 +82,8 @@ class ProductViewModel : ViewModel() {
             }
         }
     }
+
+
     fun loadProducts() {
         isLoading = true
         errorMessage = null
@@ -122,7 +121,11 @@ class ProductViewModel : ViewModel() {
                 val result = withContext(Dispatchers.IO) {
                     SupabaseClient.client
                         .from("products")
-                        .select(columns = columns)
+                        .select(columns = columns){
+                            filter{
+                                eq("active", true)
+                            }
+                        }
                         .decodeList<Product>()
                 }
                 products = result

@@ -2,13 +2,17 @@ package com.ldaniel1505.lpzrecords.ui.screens.admin
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.tooling.preview.Preview
+import com.ldaniel1505.lpzrecords.data.model.Artist
+import com.ldaniel1505.lpzrecords.data.model.Category
+import com.ldaniel1505.lpzrecords.data.model.Product
+import com.ldaniel1505.lpzrecords.data.model.Supplier
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PREVIEWS AISLADAS — ProductControlScreen
 //  Archivo temporal para desarrollo. No afecta producción.
 //  Ruta sugerida: .../ui/screens/admin/ProductControlPreviews.kt
 // ═══════════════════════════════════════════════════════════════════════════
-
+/*
 // ── 1. Pantalla principal con lista de productos ───────────────────────────
 @Preview(showBackground = true, showSystemUi = true, name = "① Lista de productos")
 @Composable
@@ -48,7 +52,7 @@ fun PreviewAddProductDialog() {
         ProductFormDialog(
             existingProduct = null,
             onDismiss       = { visible = false },
-            onSave          = { _, _, _, _, _ -> visible = false }
+            onSave          = { _, _, _, _, _, _, _, _, _, _, _, _ -> visible = false }
         )
     }
 }
@@ -60,16 +64,24 @@ fun PreviewEditProductDialog() {
     var visible by remember { mutableStateOf(true) }
     if (visible) {
         ProductFormDialog(
-            existingProduct = AdminProduct(
-                id       = 1,
-                name     = "Abbey Road",
-                artist   = "The Beatles",
-                category = "Rock",
-                price    = 34.99,
-                stock    = 12
+            existingProduct = Product(
+                id = "mock-uuid-123",
+                title = "Abbey Road",
+                description = "Edición especial remasterizada",
+                price = 34.99,
+                stock = 12,
+                img_url = "https://example.com/abbeyroad.jpg",
+                release_date = "1969-09-26",
+                active = true,
+                created_at = "2026-01-01",
+                // Pasamos los objetos simulados correctamente
+                category = Category(id = 1, name = "Rock"),
+                artist = Artist(id = 1, name = "The Beatles", biography = "", musical_genre = ""),
+                supplier = Supplier(id = "", name = "Universal Music", telephone = "", email = "")
             ),
             onDismiss = { visible = false },
-            onSave    = { _, _, _, _, _ -> visible = false }
+            // Corregido: Colocamos los 11 parámetros (_) que el diálogo exige recibir
+            onSave = { _, _, _, _, _, _, _, _, _, _, _, _ -> visible = false }
         )
     }
 }
@@ -79,7 +91,7 @@ fun PreviewEditProductDialog() {
 @Composable
 fun PreviewProductCardNormal() {
     AdminProductCard(
-        product  = AdminProduct(1, "Abbey Road", "The Beatles", "Rock", 34.99, 12),
+        product  = Product(1, "Abbey Road", "The Beatles", "Rock", 34.99, 12),
         onEdit   = {},
         onDelete = {}
     )
@@ -106,3 +118,4 @@ fun PreviewProductCardLowStock() {
         onDelete = {}
     )
 }
+*/

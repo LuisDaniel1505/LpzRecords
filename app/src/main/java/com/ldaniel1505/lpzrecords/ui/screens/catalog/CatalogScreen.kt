@@ -31,18 +31,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.ldaniel1505.lpzrecords.R
+import com.ldaniel1505.lpzrecords.data.model.Artist
+import com.ldaniel1505.lpzrecords.data.model.Category
 import com.ldaniel1505.lpzrecords.data.model.Product
 import com.ldaniel1505.lpzrecords.navigation.AppNavigation
 import com.ldaniel1505.lpzrecords.navigation.Screen
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.viewmodel.catalog.ArtistViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.catalog.CategoryViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
 
-private val catalogCategories = listOf("Todos", "Rock", "Jazz", "Pop", "Classical", "Funk")
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PANTALLA PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 fun CatalogScreen(
@@ -54,12 +53,17 @@ fun CatalogScreen(
     onNavigateToProduct: (String) -> Unit = {}
 ) {
     val viewModel: ProductViewModel = viewModel()
+    val viewModelCategory: CategoryViewModel = viewModel()
+    val viewModelArtist: ArtistViewModel = viewModel()
 
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
+        viewModelCategory.loadCategories()
+        viewModelArtist.loadArtist()
     }
 
     val products = viewModel.products
+    val catalogGenres = viewModelArtist.artists
 
     var searchQuery      by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todos") }
@@ -110,7 +114,7 @@ fun CatalogScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
             CategoryRow(
-                categories = catalogCategories,
+                categories = catalogGenres,
                 selected   = selectedCategory,
                 onSelect   = {
                     selectedCategory = it
@@ -171,9 +175,6 @@ fun CatalogScreen(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENTES INTERNOS
-// ═══════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -237,7 +238,7 @@ private fun CatalogSearchBar(query: String, onQueryChange: (String) -> Unit) {
 
 @Composable
 private fun CategoryRow(
-    categories: List<String>,
+    categories: List<Artist>,
     selected: String,
     onSelect: (String) -> Unit
 ) {
@@ -248,15 +249,15 @@ private fun CategoryRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         categories.forEach { category ->
-            val isSelected = category == selected
+            val isSelected = category.musical_genre == selected
             Surface(
-                onClick = { onSelect(category) },
+                onClick = { onSelect(category.musical_genre) },
                 shape = RoundedCornerShape(50),
                 color = if (isSelected) LpzDark else Color.Transparent,
                 border = if (!isSelected) BorderStroke(1.dp, LpzDark) else null
             ) {
                 Text(
-                    text = category,
+                    text = category.musical_genre,
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
                     fontSize = 13.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
@@ -288,7 +289,6 @@ private fun ProductCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            // ── Portada del disco ──────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -306,7 +306,6 @@ private fun ProductCard(
 
             }
 
-            // ── Info del producto ──────────────────────────────────────
             Column(
                 modifier = Modifier.padding(
                     start = 10.dp,
@@ -324,14 +323,14 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.artist.name,
+                    text = product.artist?.name ?: "No tiene Nombre",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.category.name,
+                    text = product.category?.name ?: "No tiene Categoria",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,
@@ -368,10 +367,6 @@ private fun ProductCard(
     }
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREVIEW
-// ═══════════════════════════════════════════════════════════════════════════
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

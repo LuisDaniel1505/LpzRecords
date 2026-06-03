@@ -239,7 +239,7 @@ fun AppNavigation() {
         composable(Screen.ProductControl.route) {
             ProductControlScreen(
                 onNavigateBack = { navController.popBackStack() },
-                //onNavigateToAddProduct = { /* TODO: navegar a formulario de nuevo producto si lo separas */}
+                //onNavigatetoAddProduct = { navController.navigate(Screen.ProductControl.route) }
             )
         }
 
