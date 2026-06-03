@@ -1,6 +1,7 @@
 package com.ldaniel1505.lpzrecords.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,10 +22,12 @@ import com.ldaniel1505.lpzrecords.ui.screens.catalog.ProductDetailScreen
 import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 import com.ldaniel1505.lpzrecords.ui.screens.favorites.FavoritesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.search.SearchScreen
+import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val cartViewModel: CartViewModel = viewModel()
 
     fun navigateToCatalog() {
         navController.navigate(Screen.Catalog.route) {
@@ -96,7 +99,8 @@ fun AppNavigation() {
                 onNavigateToProfile = { navController.navigate(Screen.Account.route) },
                 onNavigateToProduct = { productId ->
                     navController.navigate(Screen.ProductDetail.createRoute(productId))
-                }
+                },
+                onAddToCart = { product -> cartViewModel.addProduct(product) }
             )
         }
 
@@ -121,7 +125,12 @@ fun AppNavigation() {
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
-                onNavigateToProfile = { navController.navigate(Screen.Account.route) }
+                onNavigateToProfile = { navController.navigate(Screen.Account.route) },
+                onAddToCart = { product -> cartViewModel.addProduct(product) },
+                onBuyNow = { product ->
+                    cartViewModel.addProductIfMissing(product)
+                    navController.navigate(Screen.Checkout.route)
+                }
             )
         }
 
@@ -185,6 +194,7 @@ fun AppNavigation() {
 
         composable(Screen.Cart.route) {
             CartScreen(
+                cartViewModel = cartViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },

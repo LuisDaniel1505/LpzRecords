@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
@@ -28,20 +27,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.ldaniel1505.lpzrecords.R
-import com.ldaniel1505.lpzrecords.data.model.Artist
-import com.ldaniel1505.lpzrecords.data.model.Category
 import com.ldaniel1505.lpzrecords.data.model.Product
-import com.ldaniel1505.lpzrecords.navigation.AppNavigation
-import com.ldaniel1505.lpzrecords.navigation.Screen
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.*
-import com.ldaniel1505.lpzrecords.viewmodel.catalog.ArtistViewModel
-import com.ldaniel1505.lpzrecords.viewmodel.catalog.CategoryViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
-
 
 @Composable
 fun CatalogScreen(
@@ -50,40 +41,30 @@ fun CatalogScreen(
     onNavigateToCart: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToProduct: (String) -> Unit = {}
+    onNavigateToProduct: (String) -> Unit = {},
+    onAddToCart: (Product) -> Unit = {}
 ) {
     val viewModel: ProductViewModel = viewModel()
-    val viewModelCategory: CategoryViewModel = viewModel()
-    val viewModelArtist: ArtistViewModel = viewModel()
 
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
-        viewModelCategory.loadCategories()
-        viewModelArtist.loadArtist()
     }
 
-    val products = viewModel.products
-    val catalogGenres = viewModelArtist.artists
-
-    var searchQuery      by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Todos") }
-
-    // TODO (BACKEND): Reemplazar con datos del ViewModel:
-    // val uiState  by catalogViewModel.uiState.collectAsState()
-    // val products = uiState.products
+    val products = viewModel.filteredProducts
+    val searchQuery = viewModel.searchQuery
+    val selectedCategory = viewModel.selectedCategory
+    val categoryOptions = viewModel.categoryOptions
 
     Scaffold(
         topBar = { CatalogTopBar() },
         bottomBar = {
-            // selectedTab = null: ninguna pestaña resaltada en el catálogo.
-            // Cambia a BottomNavTab.HOME si tu diseño lo requiere.
             LpzBottomNavBar(
                 selectedTab = null,
-                onHome      = onNavigateToHome,
-                onSearch    = onNavigateToSearch,
-                onCart      = onNavigateToCart,
+                onHome = onNavigateToHome,
+                onSearch = onNavigateToSearch,
+                onCart = onNavigateToCart,
                 onFavorites = onNavigateToFavorites,
-                onProfile   = onNavigateToProfile
+                onProfile = onNavigateToProfile
             )
         },
         containerColor = LpzBeige
@@ -97,84 +78,99 @@ fun CatalogScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             CatalogSearchBar(
-                query         = searchQuery,
-                onQueryChange = {
-                    searchQuery = it
-                    // TODO (BACKEND): catalogViewModel.onSearchQueryChanged(it)
-                }
+                query = searchQuery,
+                onQueryChange = viewModel::onSearchQueryChanged
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text       = "CATEGORIAS",
-                fontSize   = 15.sp,
+                text = "CATEGORÍAS",
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color      = LpzRed
+                color = LpzRed
             )
+
             Spacer(modifier = Modifier.height(10.dp))
+
             CategoryRow(
-                categories = catalogGenres,
-                selected   = selectedCategory,
-                onSelect   = {
-                    selectedCategory = it
-                    // TODO (BACKEND): catalogViewModel.filterByCategory(it)
-                }
+                categories = categoryOptions,
+                selected = selectedCategory,
+                onSelect = viewModel::onCategorySelected
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                Text(
-                    text       = "NOVEDADES",
-                    fontSize   = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color      = LpzRed
-                )
-                IconButton(
-                    onClick  = { /* TODO: navController.navigate(Screen.Novedades.route) */ },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector        = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Ver todas las novedades",
-                        tint               = LpzRed
-                    )
-                }
-            }
+            Text(
+                text = "PRODUCTOS",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzRed
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text("Productos cargados: ${viewModel.products.size}")
-            Text("Error: ${viewModel.errorMessage ?: "ninguno"}")
+            when {
+                viewModel.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = LpzRed)
+                    }
+                }
 
-            LazyVerticalGrid(
-                columns             = GridCells.Fixed(2),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding      = PaddingValues(bottom = 16.dp)
-            ) {
-                items(products, key = { product -> product.id }) { product ->
-                    ProductCard(
-                        product         = product,
-                        onFavoriteClick = {
-                            // TODO (BACKEND): catalogViewModel.toggleFavorite(product.id)
-                        },
-                        onAddToCartClick = {
-                            // TODO (BACKEND): catalogViewModel.addToCart(product.id)
-                        },
-                        onProductClick = { onNavigateToProduct(product.id) }
-                    )
+                viewModel.errorMessage != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = viewModel.errorMessage ?: "No se pudieron cargar los productos.",
+                            color = LpzRed,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                products.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No encontramos productos con esos filtros.",
+                            color = LpzDark.copy(alpha = 0.55f),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(products, key = { product -> product.id }) { product ->
+                            ProductCard(
+                                product = product,
+                                onFavoriteClick = {
+                                    // TODO (BACKEND): conectar favoritos en fase posterior.
+                                },
+                                onAddToCartClick = {
+                                    onAddToCart(product)
+                                },
+                                onProductClick = { onNavigateToProduct(product.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,7 +182,7 @@ private fun CatalogTopBar() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "CATALOGO",
+                    text = "CATÁLOGO",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzDark
@@ -238,7 +234,7 @@ private fun CatalogSearchBar(query: String, onQueryChange: (String) -> Unit) {
 
 @Composable
 private fun CategoryRow(
-    categories: List<Artist>,
+    categories: List<String>,
     selected: String,
     onSelect: (String) -> Unit
 ) {
@@ -249,15 +245,15 @@ private fun CategoryRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         categories.forEach { category ->
-            val isSelected = category.musical_genre == selected
+            val isSelected = category == selected
             Surface(
-                onClick = { onSelect(category.musical_genre) },
+                onClick = { onSelect(category) },
                 shape = RoundedCornerShape(50),
                 color = if (isSelected) LpzDark else Color.Transparent,
                 border = if (!isSelected) BorderStroke(1.dp, LpzDark) else null
             ) {
                 Text(
-                    text = category.musical_genre,
+                    text = category,
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
                     fontSize = 13.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
@@ -268,8 +264,6 @@ private fun CategoryRow(
     }
 }
 
-
-
 @Composable
 private fun ProductCard(
     product: Product,
@@ -277,12 +271,8 @@ private fun ProductCard(
     onAddToCartClick: () -> Unit,
     onProductClick: () -> Unit
 ) {
-
-    val navController = rememberNavController()
     Card(
-        modifier = Modifier.clickable{
-            navController.navigate(Screen.ProductDetail.createRoute(product.id))
-        },
+        modifier = Modifier.clickable(onClick = onProductClick),
         onClick = onProductClick,
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -295,15 +285,12 @@ private fun ProductCard(
                     .aspectRatio(1f)
                     .background(Color.Gray)
             ) {
-
-                    AsyncImage(
-                        model = product.img_url,
-                       contentDescription = product.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                   )
-
-
+                AsyncImage(
+                    model = product.img_url,
+                    contentDescription = product.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             Column(
@@ -323,14 +310,14 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.artist?.name ?: "No tiene Nombre",
+                    text = product.artist?.name ?: "Artista desconocido",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.category?.name ?: "No tiene categoría",
+                    text = product.category?.name ?: "Sin categoría",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,
@@ -341,9 +328,7 @@ private fun ProductCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "$${product.price}",
-                    )
+                    Text(text = "$${product.price}")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
@@ -366,7 +351,6 @@ private fun ProductCard(
         }
     }
 }
-
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
