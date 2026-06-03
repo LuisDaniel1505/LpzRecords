@@ -330,7 +330,7 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.category?.name ?: "No tiene Categoria",
+                    text = product.category?.name ?: "No tiene categoría",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,

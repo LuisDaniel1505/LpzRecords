@@ -1,11 +1,11 @@
-package com.ldaniel1505.lpzrecords.viewmodel.porfile
+package com.ldaniel1505.lpzrecords.viewmodel.profile
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 
-class PorfileViewModel: ViewModel(){
+class ProfileViewModel: ViewModel(){
 
 
     fun createPaymentMethod(){

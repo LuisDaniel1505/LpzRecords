@@ -27,7 +27,7 @@ class CategoryViewModel: ViewModel() {
                 categories = result
 
             }catch(e: Exception){
-                errorMessage = "Error: No se pudo cargar las Categorias + ${e.localizedMessage}"
+                errorMessage = "Error: No se pudieron cargar las categorías. ${e.localizedMessage}"
             }
         }
     }

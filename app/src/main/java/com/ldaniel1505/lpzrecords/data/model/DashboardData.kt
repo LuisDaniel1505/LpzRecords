@@ -1,3 +1,5 @@
+package com.ldaniel1505.lpzrecords.data.model
+
 import kotlinx.serialization.Serializable
 
 @Serializable

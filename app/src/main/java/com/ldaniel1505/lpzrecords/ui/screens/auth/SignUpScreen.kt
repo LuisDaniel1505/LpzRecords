@@ -14,13 +14,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.*
 import com.ldaniel1505.lpzrecords.viewmodel.auth.AuthViewModel
-import io.github.jan.supabase.gotrue.Auth
-import kotlin.text.ifEmpty
-import kotlin.text.isNotEmpty
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,13 +25,10 @@ fun SignUpScreen(
     onSignUpSuccess: (isAdmin: Boolean) -> Unit,
     viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-
-    //Estados para backend
-
-    LaunchedEffect(viewModel.loginSuccessByRole) {
-        viewModel.loginSuccessByRole?.let { isAdmin ->
-            onSignUpSuccess(isAdmin)
-            viewModel.resetAuthState() // Limpiamos el estado para que no se quede en un bucle al regresar
+    LaunchedEffect(viewModel.signUpSuccess) {
+        if (viewModel.signUpSuccess) {
+            onSignUpSuccess(false)
+            viewModel.resetAuthState()
         }
     }
 
@@ -49,11 +42,11 @@ fun SignUpScreen(
     }
 
     fun isNameValid(name: String): Boolean {
-        return name != null
+        return name.trim().isNotEmpty()
     }
 
     fun isPasswordValid(password: String): Boolean {
-        return password != null && password.count() >= 6
+        return password.length >= 6
     }
 
     Surface(
@@ -64,7 +57,6 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- TOP BAR ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -81,9 +73,8 @@ fun SignUpScreen(
                     color = LpzDark
                 )
 
-
                 Icon(
-                    painter = painterResource(id = R.drawable.vinyl), // TODO: Cambiar por tu logo
+                    painter = painterResource(id = R.drawable.vinyl),
                     contentDescription = "Mini Logo",
                     modifier = Modifier.size(30.dp),
                     tint = Color.Unspecified
@@ -92,7 +83,6 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // --- CONTENEDOR CENTRAL ---
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -104,7 +94,6 @@ fun SignUpScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-
                     Text(
                         text = "USUARIO",
                         fontSize = 14.sp,
@@ -112,10 +101,12 @@ fun SignUpScreen(
                         color = LpzDark
                     )
 
-                    // TODO (BACKEND): Enviar este dato a tu base de datos (Ej. MongoDB/Firebase)
                     TextField(
                         value = username,
-                        onValueChange = { username = it },
+                        onValueChange = {
+                            username = it
+                            validationError = ""
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
@@ -139,10 +130,12 @@ fun SignUpScreen(
                         color = LpzDark
                     )
 
-                    // TODO (BACKEND): Validar que el correo no esté ya registrado
                     TextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = {
+                            email = it
+                            validationError = ""
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
@@ -166,10 +159,12 @@ fun SignUpScreen(
                         color = LpzDark
                     )
 
-                    // TODO (BACKEND): Enviar contraseña de forma segura
                     TextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = {
+                            password = it
+                            validationError = ""
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
@@ -187,35 +182,35 @@ fun SignUpScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-
-                    // --- MENSAJES DE ERROR (Local o de Supabase) ---
                     val errorAMostrar = validationError.ifEmpty { viewModel.errorMessage ?: "" }
                     if (errorAMostrar.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = errorAMostrar,
-                            color = LpzRed, // O usa tu color rojo del tema
+                            color = LpzRed,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
+
                     Button(
                         onClick = {
-                            if (!isValidEmail(email = email) || !isNameValid(name = username) || !isPasswordValid(password = password)){
+                            val cleanName = username.trim()
+                            val cleanEmail = email.trim()
+
+                            if (!isNameValid(cleanName)) {
+                                validationError = "Por favor, introduce tu nombre."
+                            } else if (!isValidEmail(email = cleanEmail)) {
+                                validationError = "Por favor, introduce un correo válido."
+                            } else if (!isPasswordValid(password = password)) {
                                 validationError = "Error en los datos ingresados"
                             } else {
-                                viewModel.SignUpUser(username, email, password)
+                                validationError = ""
+                                viewModel.signUpUser(cleanName, cleanEmail, password)
                             }
                         },
-
-                        /* TODO (BACKEND):
-
-                               2. Insertar nuevo usuario en la Base de Datos.
-                               3. Si es exitoso -> onSignUpSuccess() o onNavigateToLogin()
-                            */
-
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(55.dp),
@@ -231,7 +226,7 @@ fun SignUpScreen(
                             )
                         } else {
                             Text(
-                                text = "REGISTRARSE", // Cambié "Iniciar Sesión" por lógica, cámbialo si lo prefieres
+                                text = "REGISTRARSE",
                                 color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
@@ -242,7 +237,6 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // --- LINK A LOGIN ---
                 TextButton(onClick = onNavigateToLogin) {
                     Text(
                         text = "¿Ya tienes cuenta? Inicia sesión",
@@ -254,13 +248,13 @@ fun SignUpScreen(
             }
         }
     }
+}
 
-    @Composable
-    fun SignUpScreenPreview() {
-        SignUpScreen(
-            onNavigateToLogin = {},
-            onSignUpSuccess = {}
-        )
-    }
-
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun SignUpScreenPreview() {
+    SignUpScreen(
+        onNavigateToLogin = {},
+        onSignUpSuccess = {}
+    )
 }

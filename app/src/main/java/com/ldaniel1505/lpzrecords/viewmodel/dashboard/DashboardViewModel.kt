@@ -1,12 +1,12 @@
 package com.ldaniel1505.lpzrecords.viewmodel.dashboard
 
-import DashboardData
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ldaniel1505.lpzrecords.data.model.DashboardData
 import com.ldaniel1505.lpzrecords.data.model.IngresosPeriodo
 import com.ldaniel1505.lpzrecords.data.model.PeriodoIngresos
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
