@@ -71,8 +71,8 @@ class PaymentMethodsViewModel : ViewModel() {
     fun createPaymentMethod(cardNumber: String) {
         val cleanNumber = cardNumber.filter { it.isDigit() }
 
-        if (cleanNumber.length < 4) {
-            _uiState.update { it.copy(errorMessage = "Ingresa al menos los ultimos cuatro digitos.") }
+        if (cleanNumber.length != CARD_NUMBER_LENGTH) {
+            _uiState.update { it.copy(errorMessage = "La tarjeta debe tener exactamente 16 numeros.") }
             return
         }
 
@@ -168,5 +168,9 @@ class PaymentMethodsViewModel : ViewModel() {
             cardNumber.startsWith("34") || cardNumber.startsWith("37") -> "AMEX"
             else -> "TARJETA"
         }
+    }
+
+    private companion object {
+        const val CARD_NUMBER_LENGTH = 16
     }
 }

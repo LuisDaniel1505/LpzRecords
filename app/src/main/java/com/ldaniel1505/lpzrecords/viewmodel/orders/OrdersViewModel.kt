@@ -57,4 +57,10 @@ class OrdersViewModel : ViewModel() {
             }
         }
     }
+
+    fun clearState() {
+        isLoading = false
+        errorMessage = null
+        orders = emptyList()
+    }
 }

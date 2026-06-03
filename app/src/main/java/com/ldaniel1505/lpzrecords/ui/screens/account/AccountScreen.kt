@@ -54,11 +54,13 @@ import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.viewmodel.orders.OrdersViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 
 @Composable
 fun AccountScreen(
     profileViewModel: ProfileViewModel = viewModel(),
+    ordersViewModel: OrdersViewModel = viewModel(),
     onNavigateToHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
@@ -74,6 +76,7 @@ fun AccountScreen(
 
     LaunchedEffect(Unit) {
         profileViewModel.loadProfile()
+        ordersViewModel.fetchOrders()
     }
 
     LaunchedEffect(profileState.logoutSuccess) {
@@ -85,7 +88,7 @@ fun AccountScreen(
 
     val userName = profileState.displayName
     val userInitial = profileState.initials
-    val purchaseCount = 0
+    val purchaseCount = ordersViewModel.orders.size
 
     Scaffold(
         topBar = { AccountTopBar() },

@@ -69,7 +69,7 @@ fun PaymentMethodFormScreen(
     }
 
     val cleanNumber = cardNumber.filter { it.isDigit() }
-    val canSave = cleanNumber.length >= 4 && !uiState.isLoading
+    val canSave = cleanNumber.length == CARD_NUMBER_LENGTH && !uiState.isLoading
 
     Scaffold(
         topBar = {
@@ -95,8 +95,13 @@ fun PaymentMethodFormScreen(
                 label = "Numero de tarjeta",
                 value = cardNumber,
                 onValueChange = {
-                    cardNumber = it
-                    validationError = null
+                    val digits = it.filter { char -> char.isDigit() }
+                    cardNumber = digits.take(CARD_NUMBER_LENGTH)
+                    validationError = if (digits.length > CARD_NUMBER_LENGTH) {
+                        "Solo se permiten 16 numeros."
+                    } else {
+                        null
+                    }
                 },
                 keyboardType = KeyboardType.Number
             )
@@ -112,7 +117,7 @@ fun PaymentMethodFormScreen(
             Button(
                 onClick = {
                     if (!canSave) {
-                        validationError = "Completa los datos de la tarjeta."
+                        validationError = "La tarjeta debe tener exactamente 16 numeros."
                         return@Button
                     }
 
@@ -136,7 +141,7 @@ fun PaymentMethodFormScreen(
             }
 
             Text(
-                text = "Solo se guardaran los ultimos cuatro digitos.",
+                text = "Ingresa 16 numeros. Solo se guardaran los ultimos cuatro digitos.",
                 fontSize = 12.sp,
                 color = LpzDark.copy(alpha = 0.55f)
             )
@@ -225,3 +230,5 @@ private fun PaymentFormTopBar(
 fun PaymentMethodFormScreenPreview() {
     PaymentMethodFormScreen()
 }
+
+private const val CARD_NUMBER_LENGTH = 16

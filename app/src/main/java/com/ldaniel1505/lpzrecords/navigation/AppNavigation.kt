@@ -31,6 +31,7 @@ import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.checkout.CheckoutViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.favorites.FavoritesViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.orders.OrdersViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 
 @Composable
@@ -42,6 +43,7 @@ fun AppNavigation() {
     val profileViewModel: ProfileViewModel = viewModel()
     val addressViewModel: AddressViewModel = viewModel()
     val paymentMethodsViewModel: PaymentMethodsViewModel = viewModel()
+    val ordersViewModel: OrdersViewModel = viewModel()
     val favoriteProducts by favoritesViewModel.favoriteProducts.collectAsState()
     val favoriteProductIds = favoriteProducts.map { it.id }.toSet()
 
@@ -160,6 +162,7 @@ fun AppNavigation() {
         composable(Screen.Account.route) {
             AccountScreen(
                 profileViewModel = profileViewModel,
+                ordersViewModel = ordersViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
@@ -175,6 +178,7 @@ fun AppNavigation() {
                     profileViewModel.clearProfile()
                     addressViewModel.clearState()
                     paymentMethodsViewModel.clearState()
+                    ordersViewModel.clearState()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }
                         launchSingleTop = true
@@ -185,6 +189,7 @@ fun AppNavigation() {
 
         composable(Screen.Orders.route) {
             OrdersScreen(
+                viewModel = ordersViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navController.navigate(Screen.Cart.route) },
