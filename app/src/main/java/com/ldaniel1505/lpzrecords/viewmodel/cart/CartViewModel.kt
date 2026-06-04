@@ -3,9 +3,16 @@ package com.ldaniel1505.lpzrecords.viewmodel.cart
 import androidx.lifecycle.ViewModel
 import com.ldaniel1505.lpzrecords.data.model.CartItem
 import com.ldaniel1505.lpzrecords.data.model.Product
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+
+sealed interface CartUiEvent {
+    data class Message(val text: String) : CartUiEvent
+    data class ProductDeleted(val item: CartItem) : CartUiEvent
+}
 
 class CartViewModel : ViewModel() {
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
@@ -14,8 +21,8 @@ class CartViewModel : ViewModel() {
     private val _totalPrice = MutableStateFlow(0.0)
     val totalPrice: StateFlow<Double> = _totalPrice.asStateFlow()
 
-    private val _cartMessage = MutableStateFlow<String?>(null)
-    val cartMessage: StateFlow<String?> = _cartMessage.asStateFlow()
+    private val _events = MutableSharedFlow<CartUiEvent>(extraBufferCapacity = 4)
+    val events: SharedFlow<CartUiEvent> = _events
 
     fun addProduct(product: Product) {
         addProduct(product, product.category?.name ?: DEFAULT_FORMAT)
@@ -37,7 +44,7 @@ class CartViewModel : ViewModel() {
 
     fun addProduct(product: Product, selectedFormat: String) {
         if (product.stock <= 0) {
-            _cartMessage.value = "Este producto no tiene stock disponible."
+            emitMessage("Este producto no tiene stock disponible.")
             return
         }
 
@@ -49,7 +56,7 @@ class CartViewModel : ViewModel() {
         if (existingIndex >= 0) {
             val existingItem = currentItems[existingIndex]
             if (existingItem.quantity >= product.stock) {
-                _cartMessage.value = "Solo hay ${product.stock} unidades disponibles."
+                emitMessage("Solo hay ${product.stock} unidades disponibles.")
                 return
             }
             currentItems[existingIndex] = existingItem.copy(quantity = existingItem.quantity + 1)
@@ -58,13 +65,14 @@ class CartViewModel : ViewModel() {
         }
 
         publishCart(currentItems)
+        emitMessage("Producto agregado al carrito.")
     }
 
-    fun removeProduct(product: Product) {
-        removeProduct(product, product.category?.name ?: DEFAULT_FORMAT)
+    fun decreaseProductQuantity(product: Product) {
+        decreaseProductQuantity(product, product.category?.name ?: DEFAULT_FORMAT)
     }
 
-    fun removeProduct(product: Product, selectedFormat: String) {
+    fun decreaseProductQuantity(product: Product, selectedFormat: String) {
         val currentItems = _cartItems.value.toMutableList()
         val existingIndex = currentItems.indexOfFirst {
             it.product.id == product.id && it.selectedFormat == selectedFormat
@@ -73,26 +81,61 @@ class CartViewModel : ViewModel() {
         if (existingIndex < 0) return
 
         val existingItem = currentItems[existingIndex]
-        if (existingItem.quantity <= 1) {
-            currentItems.removeAt(existingIndex)
+        if (existingItem.quantity <= 1) return
+
+        currentItems[existingIndex] = existingItem.copy(quantity = existingItem.quantity - 1)
+        publishCart(currentItems)
+    }
+
+    fun deleteProduct(product: Product, selectedFormat: String) {
+        val currentItems = _cartItems.value.toMutableList()
+        val existingIndex = currentItems.indexOfFirst {
+            it.product.id == product.id && it.selectedFormat == selectedFormat
+        }
+
+        if (existingIndex < 0) return
+
+        val deletedItem = currentItems.removeAt(existingIndex)
+        publishCart(currentItems)
+        _events.tryEmit(CartUiEvent.ProductDeleted(deletedItem))
+    }
+
+    fun restoreProduct(item: CartItem) {
+        if (item.product.stock <= 0) {
+            emitMessage("El producto ya no tiene stock disponible.")
+            return
+        }
+
+        val currentItems = _cartItems.value.toMutableList()
+        val existingIndex = currentItems.indexOfFirst {
+            it.product.id == item.product.id && it.selectedFormat == item.selectedFormat
+        }
+        val restoredQuantity = item.quantity.coerceAtMost(item.product.stock)
+
+        if (existingIndex >= 0) {
+            val existing = currentItems[existingIndex]
+            currentItems[existingIndex] = existing.copy(
+                quantity = (existing.quantity + restoredQuantity).coerceAtMost(item.product.stock)
+            )
         } else {
-            currentItems[existingIndex] = existingItem.copy(quantity = existingItem.quantity - 1)
+            currentItems.add(item.copy(quantity = restoredQuantity))
         }
 
         publishCart(currentItems)
+        emitMessage("Producto restaurado.")
     }
 
     fun clearCart() {
         publishCart(emptyList())
     }
 
-    fun consumeCartMessage() {
-        _cartMessage.value = null
-    }
-
     private fun publishCart(items: List<CartItem>) {
         _cartItems.value = items
         _totalPrice.value = items.sumOf { it.product.price * it.quantity }
+    }
+
+    private fun emitMessage(message: String) {
+        _events.tryEmit(CartUiEvent.Message(message))
     }
 
     private companion object {

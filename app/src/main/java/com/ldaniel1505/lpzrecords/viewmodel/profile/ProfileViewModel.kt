@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ldaniel1505.lpzrecords.data.model.UsuarioPerfil
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
@@ -118,8 +119,22 @@ class ProfileViewModel : ViewModel() {
             _uiState.update { it.copy(errorMessage = "No se pudo identificar al usuario actual.") }
             return
         }
-        if (cleanName.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "El nombre no puede estar vacio.") }
+        if (!InputValidators.isValidName(cleanName)) {
+            _uiState.update {
+                it.copy(errorMessage = "El nombre debe tener entre 2 y 80 caracteres.")
+            }
+            return
+        }
+        if (!cleanEmail.equals(currentState.email, ignoreCase = true)) {
+            _uiState.update {
+                it.copy(errorMessage = "El correo no se puede cambiar desde esta pantalla.")
+            }
+            return
+        }
+        if (!InputValidators.isValidOptionalPhone(cleanPhone)) {
+            _uiState.update {
+                it.copy(errorMessage = "El telefono debe tener exactamente 10 digitos.")
+            }
             return
         }
 
@@ -148,19 +163,13 @@ class ProfileViewModel : ViewModel() {
                         }
                 }
 
-                val emailMessage = if (!cleanEmail.equals(currentState.email, ignoreCase = true)) {
-                    " El correo se cambia desde Supabase Auth y requiere confirmacion."
-                } else {
-                    ""
-                }
-
                 _uiState.update {
                     it.copy(
                         name = cleanName,
                         phone = cleanPhone,
                         isLoading = false,
                         errorMessage = null,
-                        successMessage = "Cambios guardados.$emailMessage"
+                        successMessage = "Cambios guardados."
                     )
                 }
             } catch (e: Exception) {

@@ -2,6 +2,7 @@ package com.ldaniel1505.lpzrecords.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,12 +11,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +94,7 @@ fun LoginScreen(
                     TextField(
                         value = email,
                         onValueChange = {
-                            email = it
+                            email = it.take(InputValidators.EMAIL_MAX_LENGTH)
                             validacionLocalError = ""
                         },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -103,7 +106,8 @@ fun LoginScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -151,11 +155,13 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            if (email.trim().isEmpty() || password.trim().isEmpty()) {
+                            if (email.trim().isEmpty() || password.isEmpty()) {
                                 validacionLocalError = "Por favor, introduce correo y contraseña."
+                            } else if (!InputValidators.isValidEmail(email)) {
+                                validacionLocalError = "Por favor, introduce un correo valido."
                             } else {
                                 validacionLocalError = ""
-                                viewModel.loginUsuario(email.trim(), password.trim())
+                                viewModel.loginUsuario(email.trim(), password)
                             }
                         },
                         modifier = Modifier

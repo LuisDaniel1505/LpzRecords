@@ -25,10 +25,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,10 +45,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.ldaniel1505.lpzrecords.data.model.Product
+import com.ldaniel1505.lpzrecords.ui.components.CartSnackbarEffect
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
 import java.util.Locale
 
 @Composable
@@ -60,7 +66,8 @@ fun ProductDetailScreen(
     onAddToCart: (Product) -> Unit = {},
     onBuyNow: (Product) -> Unit = {},
     favoriteProductIds: Set<String> = emptySet(),
-    onToggleFavorite: (Product) -> Unit = {}
+    onToggleFavorite: (Product) -> Unit = {},
+    cartViewModel: CartViewModel = viewModel()
 ) {
     LaunchedEffect(productId) {
         viewModel.loadProductById(productId)
@@ -69,41 +76,46 @@ fun ProductDetailScreen(
     val product = viewModel.selectProduct
     val isLoading = viewModel.isLoading
     val errorMessage = viewModel.errorMessage
+    val snackbarHostState = remember { SnackbarHostState() }
+    CartSnackbarEffect(cartViewModel, snackbarHostState)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LpzBeige)
-    ) {
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = LpzRed)
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = LpzBeige
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(LpzBeige)
+        ) {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = LpzRed)
+                    }
                 }
-            }
 
-            errorMessage != null -> {
-                DetailErrorState(
-                    message = errorMessage,
-                    onNavigateBack = onNavigateBack
-                )
-            }
+                errorMessage != null -> {
+                    DetailErrorState(
+                        message = errorMessage,
+                        onNavigateBack = onNavigateBack
+                    )
+                }
 
-            product != null -> {
-                ProductDetailContent(
-                    product = product,
-                    isFavorite = favoriteProductIds.contains(product.id),
-                    onNavigateBack = onNavigateBack,
-                    onToggleFavorite = { onToggleFavorite(product) },
-                    onAddToCart = {
-                        onAddToCart(product)
-                        onNavigateToCart()
-                    },
-                    onBuyNow = { onBuyNow(product) }
-                )
+                product != null -> {
+                    ProductDetailContent(
+                        product = product,
+                        isFavorite = favoriteProductIds.contains(product.id),
+                        onNavigateBack = onNavigateBack,
+                        onToggleFavorite = { onToggleFavorite(product) },
+                        onAddToCart = { onAddToCart(product) },
+                        onBuyNow = { onBuyNow(product) }
+                    )
+                }
             }
         }
     }

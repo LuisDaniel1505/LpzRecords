@@ -160,7 +160,7 @@ class CheckoutViewModel : ViewModel() {
                             parameters = buildJsonObject {
                                 put("sale_id", saleId)
                                 put("address_id", currentState.selectedAddress.idAddress)
-                                put("sale_total", currentState.total)
+                                put("shipping_cost", currentState.shippingCost)
                                 put("payment_method_value", currentState.selectedPaymentMethod.displayName)
                                 put(
                                     "items",
@@ -170,8 +170,6 @@ class CheckoutViewModel : ViewModel() {
                                                 buildJsonObject {
                                                     put("product_id", item.product.id)
                                                     put("quantity", item.quantity)
-                                                    put("unit_price", item.product.price)
-                                                    put("unit_cost", item.product.price)
                                                 }
                                             )
                                         }

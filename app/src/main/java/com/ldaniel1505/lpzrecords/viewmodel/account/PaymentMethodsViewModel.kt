@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ldaniel1505.lpzrecords.data.model.CreatePaymentMethod
 import com.ldaniel1505.lpzrecords.data.model.PaymentMethod
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
@@ -71,8 +72,12 @@ class PaymentMethodsViewModel : ViewModel() {
     fun createPaymentMethod(cardNumber: String) {
         val cleanNumber = cardNumber.filter { it.isDigit() }
 
-        if (cleanNumber.length != CARD_NUMBER_LENGTH) {
+        if (cleanNumber.length != InputValidators.CARD_NUMBER_LENGTH) {
             _uiState.update { it.copy(errorMessage = "La tarjeta debe tener exactamente 16 numeros.") }
+            return
+        }
+        if (!InputValidators.isValidSupportedCard(cleanNumber)) {
+            _uiState.update { it.copy(errorMessage = "El numero de tarjeta no es valido.") }
             return
         }
 
@@ -82,7 +87,7 @@ class PaymentMethodsViewModel : ViewModel() {
             try {
                 val uid = currentUserIdOrThrow()
                 val shouldBeDefault = _uiState.value.paymentMethods.isEmpty()
-                val provider = detectProvider(cleanNumber)
+                val provider = InputValidators.cardBrand(cleanNumber) ?: "TARJETA"
 
                 withContext(Dispatchers.IO) {
                     SupabaseClient.client
@@ -161,16 +166,4 @@ class PaymentMethodsViewModel : ViewModel() {
             ?: throw IllegalStateException("No hay usuario autenticado.")
     }
 
-    private fun detectProvider(cardNumber: String): String {
-        return when {
-            cardNumber.startsWith("4") -> "VISA"
-            cardNumber.startsWith("5") -> "MASTERCARD"
-            cardNumber.startsWith("34") || cardNumber.startsWith("37") -> "AMEX"
-            else -> "TARJETA"
-        }
-    }
-
-    private companion object {
-        const val CARD_NUMBER_LENGTH = 16
-    }
 }

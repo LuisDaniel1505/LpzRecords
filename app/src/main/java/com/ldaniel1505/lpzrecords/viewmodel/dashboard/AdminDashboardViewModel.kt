@@ -36,6 +36,7 @@ import java.util.Locale
 
 data class AdminDashboardUiState(
     val totalRevenue: Double = 0.0,
+    val totalProfit: Double = 0.0,
     val totalProducts: Int = 0,
     val totalUsers: Int = 0,
     val usersToday: Int = 0,
@@ -95,9 +96,11 @@ class AdminDashboardViewModel : ViewModel() {
                         .filter { it.status.countsAsRevenue() }
                         .sumOf { it.total }
                     val rpcRevenue = loadAnnualRevenueTotal()
+                    val totalProfit = loadTotalProfit()
 
                     AdminDashboardUiState(
                         totalRevenue = directRevenue.takeIf { it > 0.0 } ?: rpcRevenue,
+                        totalProfit = totalProfit,
                         totalProducts = products.size,
                         totalUsers = users.size,
                         usersToday = users.count { it.createdAt.isToday() },
@@ -230,6 +233,14 @@ class AdminDashboardViewModel : ViewModel() {
                 )
                 .decodeList<IngresosPeriodo>()
                 .sumOf { it.ingresos }
+        }.getOrDefault(0.0)
+    }
+
+    private suspend fun loadTotalProfit(): Double {
+        return runCatching {
+            SupabaseClient.client.postgrest
+                .rpc(function = "get_admin_total_profit")
+                .decodeAs<Double>()
         }.getOrDefault(0.0)
     }
 }

@@ -2,6 +2,7 @@ package com.ldaniel1505.lpzrecords.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,13 +11,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.auth.AuthViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,22 +36,18 @@ fun SignUpScreen(
         }
     }
 
+    LaunchedEffect(viewModel.signUpRequiresEmailConfirmation) {
+        if (viewModel.signUpRequiresEmailConfirmation) {
+            delay(1800)
+            onNavigateToLogin()
+            viewModel.resetAuthState()
+        }
+    }
+
     var validationError by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    fun isValidEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
-
-    fun isNameValid(name: String): Boolean {
-        return name.trim().isNotEmpty()
-    }
-
-    fun isPasswordValid(password: String): Boolean {
-        return password.length >= 6
-    }
 
     Surface(
         color = LpzBeige,
@@ -104,7 +104,7 @@ fun SignUpScreen(
                     TextField(
                         value = username,
                         onValueChange = {
-                            username = it
+                            username = it.take(InputValidators.NAME_MAX_LENGTH)
                             validationError = ""
                         },
                         modifier = Modifier
@@ -119,6 +119,7 @@ fun SignUpScreen(
                             unfocusedIndicatorColor = Color.Transparent,
                         ),
                         shape = RoundedCornerShape(8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -133,7 +134,7 @@ fun SignUpScreen(
                     TextField(
                         value = email,
                         onValueChange = {
-                            email = it
+                            email = it.take(InputValidators.EMAIL_MAX_LENGTH)
                             validationError = ""
                         },
                         modifier = Modifier
@@ -147,7 +148,8 @@ fun SignUpScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -200,12 +202,12 @@ fun SignUpScreen(
                             val cleanName = username.trim()
                             val cleanEmail = email.trim()
 
-                            if (!isNameValid(cleanName)) {
-                                validationError = "Por favor, introduce tu nombre."
-                            } else if (!isValidEmail(email = cleanEmail)) {
-                                validationError = "Por favor, introduce un correo válido."
-                            } else if (!isPasswordValid(password = password)) {
-                                validationError = "Error en los datos ingresados"
+                            if (!InputValidators.isValidName(cleanName)) {
+                                validationError = "El nombre debe tener entre 2 y 80 caracteres."
+                            } else if (!InputValidators.isValidEmail(cleanEmail)) {
+                                validationError = "Por favor, introduce un correo valido."
+                            } else if (!InputValidators.isValidPassword(password)) {
+                                validationError = "La contrasena debe tener al menos 6 caracteres."
                             } else {
                                 validationError = ""
                                 viewModel.signUpUser(cleanName, cleanEmail, password)

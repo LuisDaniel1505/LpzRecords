@@ -58,6 +58,7 @@ import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 
 @Composable
@@ -85,13 +86,19 @@ fun PersonalInfoScreen(
     }
 
     val hasChanges = remember(fullName, email, phone, profileState.name, profileState.email, profileState.phone) {
-        fullName.isNotBlank() &&
-                email.isNotBlank() &&
+        InputValidators.isValidName(fullName) &&
+                InputValidators.isValidOptionalPhone(phone) &&
                 (
                         fullName != profileState.name ||
-                                email != profileState.email ||
                                 phone != profileState.phone
                         )
+    }
+    val localValidationMessage = when {
+        fullName.isNotBlank() && !InputValidators.isValidName(fullName) ->
+            "El nombre debe tener entre 2 y 80 caracteres."
+        phone.isNotBlank() && !InputValidators.isValidOptionalPhone(phone) ->
+            "El telefono debe tener exactamente 10 digitos."
+        else -> null
     }
 
     Scaffold(
@@ -122,7 +129,7 @@ fun PersonalInfoScreen(
             EditableInfoCard(
                 label = "NOMBRE COMPLETO",
                 value = fullName,
-                onValueChange = { fullName = it },
+                onValueChange = { fullName = it.take(InputValidators.NAME_MAX_LENGTH) },
                 keyboardType = KeyboardType.Text,
                 capitalization = KeyboardCapitalization.Words
             )
@@ -130,16 +137,27 @@ fun PersonalInfoScreen(
             EditableInfoCard(
                 label = "CORREO ELECTRONICO",
                 value = email,
-                onValueChange = { email = it },
-                keyboardType = KeyboardType.Email
+                onValueChange = {},
+                keyboardType = KeyboardType.Email,
+                editable = false
             )
 
             EditableInfoCard(
                 label = "TELEFONO",
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = {
+                    phone = InputValidators.digitsOnly(it, InputValidators.PHONE_LENGTH)
+                },
                 keyboardType = KeyboardType.Phone
             )
+
+            localValidationMessage?.let { message ->
+                Text(
+                    text = message,
+                    fontSize = 12.sp,
+                    color = LpzRed
+                )
+            }
 
             profileState.errorMessage?.let { message ->
                 Text(
@@ -198,7 +216,8 @@ private fun EditableInfoCard(
     value: String,
     onValueChange: (String) -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text,
-    capitalization: KeyboardCapitalization = KeyboardCapitalization.None
+    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
+    editable: Boolean = true
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -229,6 +248,7 @@ private fun EditableInfoCard(
                 BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
+                    readOnly = !editable,
                     singleLine = true,
                     textStyle = TextStyle(
                         fontSize = 16.sp,
@@ -245,18 +265,20 @@ private fun EditableInfoCard(
                         .focusRequester(focusRequester)
                 )
 
-                IconButton(
-                    onClick = { focusRequester.requestFocus() },
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar $label",
-                        tint = LpzDark.copy(alpha = 0.40f),
-                        modifier = Modifier.size(17.dp)
-                    )
+                if (editable) {
+                    IconButton(
+                        onClick = { focusRequester.requestFocus() },
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar $label",
+                            tint = LpzDark.copy(alpha = 0.40f),
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
                 }
             }
         }

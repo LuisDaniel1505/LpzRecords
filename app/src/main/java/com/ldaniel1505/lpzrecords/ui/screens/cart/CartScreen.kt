@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -28,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -57,6 +59,7 @@ import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.cart.CartUiEvent
 import java.util.Locale
 
 @Composable
@@ -71,13 +74,23 @@ fun CartScreen(
 ) {
     val cartItems by cartViewModel.cartItems.collectAsState()
     val total by cartViewModel.totalPrice.collectAsState()
-    val cartMessage by cartViewModel.cartMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(cartMessage) {
-        val message = cartMessage ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
-        cartViewModel.consumeCartMessage()
+    LaunchedEffect(cartViewModel, snackbarHostState) {
+        cartViewModel.events.collect { event ->
+            when (event) {
+                is CartUiEvent.Message -> snackbarHostState.showSnackbar(event.text)
+                is CartUiEvent.ProductDeleted -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = "Producto eliminado del carrito.",
+                        actionLabel = "Deshacer"
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        cartViewModel.restoreProduct(event.item)
+                    }
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -123,7 +136,10 @@ fun CartScreen(
                                 cartViewModel.addProduct(item.product, item.selectedFormat)
                             },
                             onDecrease = {
-                                cartViewModel.removeProduct(item.product, item.selectedFormat)
+                                cartViewModel.decreaseProductQuantity(item.product, item.selectedFormat)
+                            },
+                            onDelete = {
+                                cartViewModel.deleteProduct(item.product, item.selectedFormat)
                             }
                         )
                     }
@@ -167,7 +183,8 @@ private fun EmptyCartState(modifier: Modifier = Modifier) {
 private fun CartItemCard(
     item: CartItem,
     onIncrease: () -> Unit,
-    onDecrease: () -> Unit
+    onDecrease: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
@@ -231,12 +248,30 @@ private fun CartItemCard(
                 )
             }
 
-            QuantityStepper(
-                quantity = item.quantity,
-                canIncrease = item.quantity < item.product.stock,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease
-            )
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar producto",
+                        tint = LpzDark.copy(alpha = 0.55f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                QuantityStepper(
+                    quantity = item.quantity,
+                    canDecrease = item.quantity > 1,
+                    canIncrease = item.quantity < item.product.stock,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease
+                )
+            }
         }
     }
 }
@@ -244,6 +279,7 @@ private fun CartItemCard(
 @Composable
 private fun QuantityStepper(
     quantity: Int,
+    canDecrease: Boolean,
     canIncrease: Boolean,
     onDecrease: () -> Unit,
     onIncrease: () -> Unit
@@ -254,13 +290,14 @@ private fun QuantityStepper(
     ) {
         IconButton(
             onClick = onDecrease,
+            enabled = canDecrease,
             modifier = Modifier.size(32.dp)
         ) {
             Text(
                 text = "-",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = LpzRed
+                color = if (canDecrease) LpzRed else LpzDark.copy(alpha = 0.25f)
             )
         }
 

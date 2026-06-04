@@ -34,6 +34,7 @@ import com.ldaniel1505.lpzrecords.data.model.Category
 import com.ldaniel1505.lpzrecords.data.model.Product
 import com.ldaniel1505.lpzrecords.data.model.Supplier
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ArtistViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.CategoryViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.SupplierViewModel
@@ -101,7 +102,7 @@ fun ProductControlScreen(
             },
 
             onSave = { id, category, artist, supplier, title, description,
-                       price, stock, img_url, release_date, active, fechaSegura->
+                       price, unitCost, stock, img_url, release_date, active, fechaSegura->
 
                 val productData = Product(
                     id = id.ifBlank { productToEdit?.id ?: java.util.UUID.randomUUID().toString() },
@@ -111,6 +112,7 @@ fun ProductControlScreen(
                     title = title,
                     description = description,
                     price = price,
+                    unitCost = unitCost,
                     stock = stock,
                     img_url = img_url,
                     release_date = release_date,
@@ -389,7 +391,7 @@ fun ProductFormDialog(
     onDismiss: () -> Unit,
     onSave: (
         id: String, category: Category, artist: Artist, supplier: Supplier,
-        title: String, description: String, price: Double, stock: Int,
+        title: String, description: String, price: Double, unitCost: Double, stock: Int,
         img_url: String, release_date: String, active: Boolean, created_at:String
     ) -> Unit,
 ) {
@@ -424,6 +426,7 @@ fun ProductFormDialog(
     var title            by remember(existingProduct) { mutableStateOf(existingProduct?.title ?: "") }
     var description      by remember(existingProduct) { mutableStateOf(existingProduct?.description ?: "") }
     var priceStr         by remember(existingProduct) { mutableStateOf(if (isEditing) String.format(Locale.US, "%.2f", existingProduct!!.price) else "") }
+    var unitCostStr      by remember(existingProduct) { mutableStateOf(if (isEditing) String.format(Locale.US, "%.2f", existingProduct!!.unitCost) else "") }
     var stockStr         by remember(existingProduct) { mutableStateOf(existingProduct?.stock?.toString() ?: "") }
     var img_url          by remember(existingProduct) { mutableStateOf(existingProduct?.img_url ?: "") }
     var release_date    by remember(existingProduct) { mutableStateOf(existingProduct?.release_date ?: "") }
@@ -437,13 +440,21 @@ fun ProductFormDialog(
 
 
     val priceValue = priceStr.toDoubleOrNull()
+    val unitCostValue = unitCostStr.toDoubleOrNull()
     val stockValue = stockStr.toIntOrNull()
     val validationMessage = when {
         title.isBlank() -> "Ingresa el nombre del producto."
+        title.trim().length > InputValidators.PRODUCT_TITLE_MAX_LENGTH -> "El nombre no puede exceder 150 caracteres."
+        description.length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH -> "La descripcion no puede exceder 1000 caracteres."
         selectedCategory.id <= 0 -> "Selecciona una categoria."
         selectedArtist.id <= 0 -> "Selecciona un artista."
         priceValue == null || priceValue <= 0.0 -> "El precio debe ser mayor a 0."
+        !InputValidators.hasAtMostTwoDecimals(priceValue) -> "El precio solo puede tener dos decimales."
+        unitCostValue == null || unitCostValue <= 0.0 -> "El costo debe ser mayor a 0."
+        !InputValidators.hasAtMostTwoDecimals(unitCostValue) -> "El costo solo puede tener dos decimales."
         stockValue == null || stockValue < 0 -> "El stock no puede ser negativo."
+        stockValue > InputValidators.STOCK_MAX -> "El stock no puede exceder 99999 unidades."
+        !InputValidators.isValidHttpUrl(img_url) -> "La URL de la imagen debe comenzar con http:// o https://."
         else -> null
     }
     val isValid = validationMessage == null
@@ -476,9 +487,24 @@ fun ProductFormDialog(
                 }
 
                 // Campos de Texto Principales
-                FormFieldWhite(label = "Nombre del producto", value = title, placeholder = "Ej. Abbey Road", onValueChange = { title = it })
-                FormFieldWhite(label = "Descripción", value = description, placeholder = "Ej. Edición especial de aniversario", onValueChange = { description = it })
-                FormFieldWhite(label = "URL de la Imagen", value = img_url, placeholder = "Ej. https://link-de-imagen.com/foto.jpg", onValueChange = { img_url = it })
+                FormFieldWhite(
+                    label = "Nombre del producto",
+                    value = title,
+                    placeholder = "Ej. Abbey Road",
+                    onValueChange = { title = it.take(InputValidators.PRODUCT_TITLE_MAX_LENGTH) }
+                )
+                FormFieldWhite(
+                    label = "Descripción",
+                    value = description,
+                    placeholder = "Ej. Edición especial de aniversario",
+                    onValueChange = { description = it.take(InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH) }
+                )
+                FormFieldWhite(
+                    label = "URL de la Imagen",
+                    value = img_url,
+                    placeholder = "Ej. https://link-de-imagen.com/foto.jpg",
+                    onValueChange = { img_url = it.take(InputValidators.URL_MAX_LENGTH) }
+                )
 
                 // Selector de Fecha de Lanzamiento
                 val context = LocalContext.current
@@ -570,7 +596,7 @@ fun ProductFormDialog(
                     }
                 }
 
-                // Fila de Precio y Stock
+                // Fila de Precio y Costo
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FormFieldWhite(
                         label = "Precio ($)",
@@ -581,14 +607,24 @@ fun ProductFormDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                     )
                     FormFieldWhite(
-                        label = "Stock",
-                        value = stockStr,
-                        placeholder = "0",
-                        onValueChange = { stockStr = it.filter(Char::isDigit).take(5) },
+                        label = "Costo ($)",
+                        value = unitCostStr,
+                        placeholder = "0.00",
+                        onValueChange = { unitCostStr = sanitizePriceInput(it) },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                     )
                 }
+
+                FormFieldWhite(
+                    label = "Stock",
+                    value = stockStr,
+                    placeholder = "0",
+                    onValueChange = {
+                        stockStr = InputValidators.digitsOnly(it, InputValidators.STOCK_MAX.toString().length)
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
 
                 //Para seleccionar los Suppliers registrados
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -802,6 +838,7 @@ fun ProductFormDialog(
                                 title.trim(),
                                 description.trim(),
                                 priceValue ?: 0.0,
+                                unitCostValue ?: 0.0,
                                 stockValue ?: 0,
                                 cleanImageUrl,
                                 release_date.trim(),

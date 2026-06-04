@@ -50,6 +50,7 @@ import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 
 @Composable
@@ -69,7 +70,7 @@ fun PaymentMethodFormScreen(
     }
 
     val cleanNumber = cardNumber.filter { it.isDigit() }
-    val canSave = cleanNumber.length == CARD_NUMBER_LENGTH && !uiState.isLoading
+    val canSave = InputValidators.isValidSupportedCard(cleanNumber) && !uiState.isLoading
 
     Scaffold(
         topBar = {
@@ -96,8 +97,8 @@ fun PaymentMethodFormScreen(
                 value = cardNumber,
                 onValueChange = {
                     val digits = it.filter { char -> char.isDigit() }
-                    cardNumber = digits.take(CARD_NUMBER_LENGTH)
-                    validationError = if (digits.length > CARD_NUMBER_LENGTH) {
+                    cardNumber = digits.take(InputValidators.CARD_NUMBER_LENGTH)
+                    validationError = if (digits.length > InputValidators.CARD_NUMBER_LENGTH) {
                         "Solo se permiten 16 numeros."
                     } else {
                         null
@@ -117,7 +118,11 @@ fun PaymentMethodFormScreen(
             Button(
                 onClick = {
                     if (!canSave) {
-                        validationError = "La tarjeta debe tener exactamente 16 numeros."
+                        validationError = if (cleanNumber.length != InputValidators.CARD_NUMBER_LENGTH) {
+                            "La tarjeta debe tener exactamente 16 numeros."
+                        } else {
+                            "El numero de tarjeta no es valido."
+                        }
                         return@Button
                     }
 
@@ -141,7 +146,7 @@ fun PaymentMethodFormScreen(
             }
 
             Text(
-                text = "Ingresa 16 numeros. Solo se guardaran los ultimos cuatro digitos.",
+                text = "Se admiten tarjetas Visa y Mastercard de 16 digitos. Solo se guardaran los ultimos cuatro.",
                 fontSize = 12.sp,
                 color = LpzDark.copy(alpha = 0.55f)
             )
@@ -230,5 +235,3 @@ private fun PaymentFormTopBar(
 fun PaymentMethodFormScreenPreview() {
     PaymentMethodFormScreen()
 }
-
-private const val CARD_NUMBER_LENGTH = 16

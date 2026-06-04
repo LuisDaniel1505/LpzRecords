@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ldaniel1505.lpzrecords.data.model.Product
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,7 @@ private val PRODUCT_COLUMNS = Columns.raw(
     title,
     description,
     price,
+    unit_cost,
     stock,
     img_url,
     release_date,
@@ -172,8 +174,18 @@ class ProductControlViewModel : ViewModel() {
     private fun validateProduct(product: Product): String? {
         return when {
             product.title.isBlank() -> "Ingresa el nombre del producto."
+            product.title.trim().length > InputValidators.PRODUCT_TITLE_MAX_LENGTH ->
+                "El nombre del producto no puede exceder 150 caracteres."
+            product.description.length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH ->
+                "La descripcion no puede exceder 1000 caracteres."
             product.price <= 0.0 -> "El precio debe ser mayor a 0."
+            !InputValidators.hasAtMostTwoDecimals(product.price) -> "El precio solo puede tener dos decimales."
+            product.unitCost <= 0.0 -> "El costo debe ser mayor a 0."
+            !InputValidators.hasAtMostTwoDecimals(product.unitCost) -> "El costo solo puede tener dos decimales."
             product.stock < 0 -> "El stock no puede ser negativo."
+            product.stock > InputValidators.STOCK_MAX -> "El stock no puede exceder 99999 unidades."
+            !InputValidators.isValidHttpUrl(product.img_url.orEmpty()) ->
+                "La URL de la imagen debe comenzar con http:// o https://."
             product.fkCategory == null || product.fkCategory <= 0 -> "Selecciona una categoria."
             product.fkArtist == null || product.fkArtist <= 0 -> "Selecciona un artista."
             else -> null
@@ -205,6 +217,7 @@ class ProductControlViewModel : ViewModel() {
             title = title.trim(),
             description = description.trim().ifBlank { null },
             price = price,
+            unitCost = unitCost,
             stock = stock,
             imageUrl = img_url?.trim()?.ifBlank { null },
             releaseDate = release_date.trim().ifBlank { null },
@@ -221,6 +234,7 @@ class ProductControlViewModel : ViewModel() {
             title = title.trim(),
             description = description.trim().ifBlank { null },
             price = price,
+            unitCost = unitCost,
             stock = stock,
             imageUrl = img_url?.trim()?.ifBlank { null },
             releaseDate = release_date.trim().ifBlank { null },
@@ -241,6 +255,8 @@ private data class ProductInsertPayload(
     val title: String,
     val description: String?,
     val price: Double,
+    @SerialName("unit_cost")
+    val unitCost: Double,
     val stock: Int,
     @SerialName("img_url")
     val imageUrl: String?,
@@ -262,6 +278,8 @@ private data class ProductUpdatePayload(
     val title: String,
     val description: String?,
     val price: Double,
+    @SerialName("unit_cost")
+    val unitCost: Double,
     val stock: Int,
     @SerialName("img_url")
     val imageUrl: String?,

@@ -29,4 +29,6 @@ data class Product (
     val fkArtist: Int? = null,
     @SerialName("fk_id_supplier")
     val fkSupplier: Int? = null,
+    @SerialName("unit_cost")
+    val unitCost: Double = 0.0,
 )

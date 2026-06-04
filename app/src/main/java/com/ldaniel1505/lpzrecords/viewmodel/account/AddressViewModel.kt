@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ldaniel1505.lpzrecords.data.model.Address
 import com.ldaniel1505.lpzrecords.data.model.CreateAddress
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
@@ -86,6 +87,22 @@ class AddressViewModel : ViewModel() {
             cleanPostalCode.isBlank()
         ) {
             _uiState.update { it.copy(errorMessage = "Completa todos los campos de direccion.") }
+            return
+        }
+        if (cleanStreet.length > InputValidators.STREET_MAX_LENGTH) {
+            _uiState.update { it.copy(errorMessage = "La calle y numero no pueden exceder 150 caracteres.") }
+            return
+        }
+        if (cleanCity.length > InputValidators.CITY_MAX_LENGTH) {
+            _uiState.update { it.copy(errorMessage = "La ciudad no puede exceder 80 caracteres.") }
+            return
+        }
+        if (cleanState.length > InputValidators.STATE_MAX_LENGTH) {
+            _uiState.update { it.copy(errorMessage = "El estado no puede exceder 80 caracteres.") }
+            return
+        }
+        if (!InputValidators.isValidPostalCode(cleanPostalCode)) {
+            _uiState.update { it.copy(errorMessage = "El codigo postal debe tener exactamente 5 digitos.") }
             return
         }
 

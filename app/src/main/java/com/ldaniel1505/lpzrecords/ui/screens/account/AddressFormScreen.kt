@@ -51,6 +51,7 @@ import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
 
 @Composable
@@ -72,11 +73,14 @@ fun AddressFormScreen(
         }
     }
 
-    val canSave = street.isNotBlank() &&
-            city.isNotBlank() &&
-            state.isNotBlank() &&
-            postalCode.isNotBlank() &&
-            !uiState.isLoading
+    val validationMessage = when {
+        street.isBlank() -> "Ingresa la calle y numero."
+        city.isBlank() -> "Ingresa la ciudad."
+        state.isBlank() -> "Ingresa el estado."
+        !InputValidators.isValidPostalCode(postalCode) -> "El codigo postal debe tener exactamente 5 digitos."
+        else -> null
+    }
+    val canSave = validationMessage == null && !uiState.isLoading
 
     Scaffold(
         topBar = {
@@ -102,7 +106,7 @@ fun AddressFormScreen(
                 label = "Calle y numero",
                 value = street,
                 onValueChange = {
-                    street = it
+                    street = it.take(InputValidators.STREET_MAX_LENGTH)
                     validationError = null
                 },
                 capitalization = KeyboardCapitalization.Words
@@ -111,7 +115,7 @@ fun AddressFormScreen(
                 label = "Ciudad",
                 value = city,
                 onValueChange = {
-                    city = it
+                    city = it.take(InputValidators.CITY_MAX_LENGTH)
                     validationError = null
                 },
                 capitalization = KeyboardCapitalization.Words
@@ -120,7 +124,7 @@ fun AddressFormScreen(
                 label = "Estado",
                 value = state,
                 onValueChange = {
-                    state = it
+                    state = it.take(InputValidators.STATE_MAX_LENGTH)
                     validationError = null
                 },
                 capitalization = KeyboardCapitalization.Characters
@@ -129,7 +133,7 @@ fun AddressFormScreen(
                 label = "Codigo postal",
                 value = postalCode,
                 onValueChange = {
-                    postalCode = it
+                    postalCode = InputValidators.digitsOnly(it, InputValidators.POSTAL_CODE_LENGTH)
                     validationError = null
                 },
                 keyboardType = KeyboardType.Number
@@ -146,7 +150,7 @@ fun AddressFormScreen(
             Button(
                 onClick = {
                     if (!canSave) {
-                        validationError = "Completa todos los campos."
+                        validationError = validationMessage
                         return@Button
                     }
 

@@ -115,6 +115,11 @@ fun AdminDashboardScreen(
                 isLoading = uiState.isLoading
             )
 
+            ProfitCard(
+                totalProfit = uiState.totalProfit,
+                isLoading = uiState.isLoading
+            )
+
             UsersChartSection(
                 totalUsers = uiState.totalUsers,
                 usersToday = uiState.usersToday,
@@ -157,6 +162,58 @@ fun AdminDashboardScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun ProfitCard(
+    totalProfit: Double,
+    isLoading: Boolean
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "GANANCIA TOTAL",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark.copy(alpha = 0.50f),
+                    letterSpacing = 0.8.sp
+                )
+                Text(
+                    text = if (isLoading) "..." else money(totalProfit),
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFE4F0E8)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "+",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E7D4F)
+                )
+            }
         }
     }
 }

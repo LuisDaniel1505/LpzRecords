@@ -33,6 +33,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -41,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,11 +58,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.data.model.Product
+import com.ldaniel1505.lpzrecords.ui.components.CartSnackbarEffect
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
 import com.ldaniel1505.lpzrecords.viewmodel.catalog.ProductViewModel
+import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
 
 @Composable
 fun CatalogScreen(
@@ -71,13 +76,16 @@ fun CatalogScreen(
     onNavigateToProduct: (String) -> Unit = {},
     favoriteProductIds: Set<String> = emptySet(),
     onAddToCart: (Product) -> Unit = {},
-    onToggleFavorite: (Product) -> Unit = {}
+    onToggleFavorite: (Product) -> Unit = {},
+    cartViewModel: CartViewModel = viewModel()
 ) {
     val viewModel: ProductViewModel = viewModel()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
     }
+    CartSnackbarEffect(cartViewModel, snackbarHostState)
 
     val products = viewModel.filteredProducts
     val searchQuery = viewModel.searchQuery
@@ -96,6 +104,7 @@ fun CatalogScreen(
                 onProfile = onNavigateToProfile
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = LpzBeige
     ) { innerPadding ->
         Column(
