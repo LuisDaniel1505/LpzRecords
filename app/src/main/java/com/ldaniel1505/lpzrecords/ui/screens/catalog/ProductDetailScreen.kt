@@ -219,7 +219,7 @@ private fun ProductDetailContent(
             )
 
             Text(
-                text = product.description.ifBlank { "Sin descripcion disponible." },
+                text = product.description.orEmpty().ifBlank { "Sin descripcion disponible." },
                 fontSize = 14.sp,
                 color = LpzDark.copy(alpha = 0.68f),
                 lineHeight = 20.sp

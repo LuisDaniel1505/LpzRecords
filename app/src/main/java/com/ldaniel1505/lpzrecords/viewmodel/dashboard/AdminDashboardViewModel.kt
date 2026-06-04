@@ -40,6 +40,9 @@ data class AdminDashboardUiState(
     val totalProducts: Int = 0,
     val totalUsers: Int = 0,
     val usersToday: Int = 0,
+    val usersLastSevenDays: Int = 0,
+    val userRegistrationsLastSevenDays: List<Int> = List(7) { 0 },
+    val userRegistrationLabels: List<String> = emptyList(),
     val recentOrders: List<AdminRecentOrder> = emptyList(),
     val adminName: String = "Administrador",
     val adminInitials: String = "A",
@@ -97,13 +100,17 @@ class AdminDashboardViewModel : ViewModel() {
                         .sumOf { it.total }
                     val rpcRevenue = loadAnnualRevenueTotal()
                     val totalProfit = loadTotalProfit()
+                    val userRegistrationSummary = buildUserRegistrationSummary(users)
 
                     AdminDashboardUiState(
                         totalRevenue = directRevenue.takeIf { it > 0.0 } ?: rpcRevenue,
                         totalProfit = totalProfit,
                         totalProducts = products.size,
                         totalUsers = users.size,
-                        usersToday = users.count { it.createdAt.isToday() },
+                        usersToday = userRegistrationSummary.dailyCounts.lastOrNull() ?: 0,
+                        usersLastSevenDays = userRegistrationSummary.dailyCounts.sum(),
+                        userRegistrationsLastSevenDays = userRegistrationSummary.dailyCounts,
+                        userRegistrationLabels = userRegistrationSummary.labels,
                         recentOrders = loadRecentOrders(
                             usersById = usersById,
                             fallbackSales = sales
@@ -114,7 +121,7 @@ class AdminDashboardViewModel : ViewModel() {
                 }
 
                 _uiState.value = dashboardData
-                updateUserChart(dashboardData.totalUsers, dashboardData.usersToday)
+                updateUserChart(dashboardData.userRegistrationsLastSevenDays)
                 cargarIngresosPorPeriodo(selectedPeriodo)
             } catch (_: Exception) {
                 _uiState.update {
@@ -175,11 +182,11 @@ class AdminDashboardViewModel : ViewModel() {
             }
     }
 
-    private fun updateUserChart(totalUsers: Int, usersToday: Int) {
+    private fun updateUserChart(dailyCounts: List<Int>) {
         viewModelScope.launch {
             userChartModelProducer.runTransaction {
                 columnSeries {
-                    series(totalUsers, usersToday)
+                    series(dailyCounts)
                 }
             }
         }
@@ -245,6 +252,29 @@ class AdminDashboardViewModel : ViewModel() {
     }
 }
 
+private data class UserRegistrationSummary(
+    val dailyCounts: List<Int>,
+    val labels: List<String>
+)
+
+private fun buildUserRegistrationSummary(users: List<AdminUserRow>): UserRegistrationSummary {
+    val today = Calendar.getInstance()
+    val days = (6 downTo 0).map { daysAgo ->
+        Calendar.getInstance().apply {
+            timeInMillis = today.timeInMillis
+            add(Calendar.DAY_OF_YEAR, -daysAgo)
+        }
+    }
+    val registrationDays = users
+        .mapNotNull { user -> user.createdAt.toMillisOrNull() }
+        .map { millis -> Calendar.getInstance().apply { timeInMillis = millis }.dayKey() }
+
+    return UserRegistrationSummary(
+        dailyCounts = days.map { day -> registrationDays.count { it == day.dayKey() } },
+        labels = days.map { day -> day.shortDayLabel() }
+    )
+}
+
 private fun String.countsAsRevenue(): Boolean {
     return trim().uppercase() !in setOf("CANCELADO", "CANCELADA", "CANCELLED")
 }
@@ -260,12 +290,20 @@ private fun AdminRecentOrderRpcRow.toAdminRecentOrder(): AdminRecentOrder {
     )
 }
 
-private fun String?.isToday(): Boolean {
-    val millis = this.toMillisOrNull() ?: return false
-    val today = Calendar.getInstance()
-    val value = Calendar.getInstance().apply { timeInMillis = millis }
-    return today.get(Calendar.YEAR) == value.get(Calendar.YEAR) &&
-            today.get(Calendar.DAY_OF_YEAR) == value.get(Calendar.DAY_OF_YEAR)
+private fun Calendar.dayKey(): Pair<Int, Int> {
+    return get(Calendar.YEAR) to get(Calendar.DAY_OF_YEAR)
+}
+
+private fun Calendar.shortDayLabel(): String {
+    return when (get(Calendar.DAY_OF_WEEK)) {
+        Calendar.MONDAY -> "Lun"
+        Calendar.TUESDAY -> "Mar"
+        Calendar.WEDNESDAY -> "Mie"
+        Calendar.THURSDAY -> "Jue"
+        Calendar.FRIDAY -> "Vie"
+        Calendar.SATURDAY -> "Sab"
+        else -> "Dom"
+    }
 }
 
 private fun String?.toMillisOrNull(): Long? {

@@ -116,8 +116,8 @@ class ProductViewModel : ViewModel() {
 
                 selectProduct = result
 
-            } catch (e: Exception) {
-                errorMessage = "Error al cargar los detalles: ${e.localizedMessage}"
+            } catch (_: Exception) {
+                errorMessage = "No se pudieron cargar los detalles del producto."
             } finally {
                 isLoading = false
             }
@@ -172,8 +172,8 @@ class ProductViewModel : ViewModel() {
                 }
                 products = result
                 applyCatalogFilters()
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.localizedMessage}"
+            } catch (_: Exception) {
+                errorMessage = "No se pudieron cargar los productos. Revisa tu conexion e intenta de nuevo."
                 products = emptyList()
                 filteredProducts = emptyList()
             } finally {

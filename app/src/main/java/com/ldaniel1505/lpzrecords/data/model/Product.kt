@@ -15,11 +15,11 @@ data class Product (
     @SerialName("supplier")
     val supplier: Supplier? = null,
     val title: String,
-    val description: String,
+    val description: String? = null,
     val price: Double,
     val stock: Int,
     val img_url: String?,
-    val release_date: String,
+    val release_date: String? = null,
     var active: Boolean,
     val created_at: String,
 

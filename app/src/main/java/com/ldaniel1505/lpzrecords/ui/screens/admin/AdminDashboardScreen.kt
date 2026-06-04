@@ -60,6 +60,7 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -68,6 +69,7 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.Position
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import java.util.Locale
 
@@ -123,6 +125,10 @@ fun AdminDashboardScreen(
             UsersChartSection(
                 totalUsers = uiState.totalUsers,
                 usersToday = uiState.usersToday,
+                usersLastSevenDays = uiState.usersLastSevenDays,
+                registrationsLastSevenDays = uiState.userRegistrationsLastSevenDays,
+                labels = uiState.userRegistrationLabels,
+                isLoading = uiState.isLoading,
                 viewModel = viewModel
             )
 
@@ -274,6 +280,10 @@ private fun RevenueCard(
 private fun UsersChartSection(
     totalUsers: Int,
     usersToday: Int,
+    usersLastSevenDays: Int,
+    registrationsLastSevenDays: List<Int>,
+    labels: List<String>,
+    isLoading: Boolean,
     viewModel: AdminDashboardViewModel
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -283,6 +293,39 @@ private fun UsersChartSection(
             fontWeight = FontWeight.Bold,
             color = LpzDark
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            UserMetricCard(
+                label = "TOTAL",
+                value = totalUsers,
+                accentColor = LpzRed,
+                isLoading = isLoading,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(88.dp)
+            )
+            UserMetricCard(
+                label = "HOY",
+                value = usersToday,
+                accentColor = Color(0xFF2E7D4F),
+                isLoading = isLoading,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(88.dp)
+            )
+            UserMetricCard(
+                label = "7 DIAS",
+                value = usersLastSevenDays,
+                accentColor = Color(0xFFB78628),
+                isLoading = isLoading,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(88.dp)
+            )
+        }
 
         Card(
             shape = RoundedCornerShape(16.dp),
@@ -294,41 +337,173 @@ private fun UsersChartSection(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        rememberColumnCartesianLayer(),
-                        startAxis = VerticalAxis.rememberStart(),
-                        bottomAxis = HorizontalAxis.rememberBottom(
-                            label = rememberAxisLabelComponent(),
-                            valueFormatter = CartesianValueFormatter { _, x, _ ->
-                                when (x.toInt()) {
-                                    0 -> "Total"
-                                    1 -> "Hoy"
-                                    else -> ""
-                                }
-                            }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Nuevos registros",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LpzDark
+                    )
+                    Text(
+                        text = "Actividad de los ultimos 7 dias",
+                        fontSize = 11.sp,
+                        color = LpzDark.copy(alpha = 0.48f)
+                    )
+                }
+
+                when {
+                    isLoading -> {
+                        UserChartLoadingState()
+                    }
+
+                    registrationsLastSevenDays.none { it > 0 } -> {
+                        UserChartEmptyState()
+                    }
+
+                    else -> {
+                        UserRegistrationsChart(
+                            labels = labels,
+                            viewModel = viewModel
                         )
-                    ),
-                    modelProducer = viewModel.userChartModelProducer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                )
-
-                HorizontalDivider(
-                    color = Color.Gray.copy(alpha = 0.12f),
-                    thickness = 1.dp
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    MiniMetric(label = "TOTAL", value = totalUsers.toString())
-                    MiniMetric(label = "NUEVOS HOY", value = usersToday.toString())
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun UserMetricCard(
+    label: String,
+    value: Int,
+    accentColor: Color,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(accentColor)
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(
+                    text = if (isLoading) "..." else value.toString(),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark
+                )
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark.copy(alpha = 0.48f),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserRegistrationsChart(
+    labels: List<String>,
+    viewModel: AdminDashboardViewModel
+) {
+    val columnColor = LpzRed
+    val column = rememberLineComponent(
+        fill = Fill(columnColor),
+        thickness = 22.dp,
+        shape = RoundedCornerShape(6.dp)
+    )
+
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            rememberColumnCartesianLayer(
+                columnProvider = ColumnCartesianLayer.ColumnProvider.series(column),
+                dataLabel = rememberAxisLabelComponent(
+                    style = TextStyle(
+                        color = LpzDark.copy(alpha = 0.72f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                ),
+                dataLabelValueFormatter = CartesianValueFormatter { _, y, _ ->
+                    if (y <= 0.0) "" else y.toInt().toString()
+                }
+            ),
+            startAxis = VerticalAxis.rememberStart(
+                label = rememberAxisLabelComponent(
+                    style = TextStyle(
+                        color = LpzDark.copy(alpha = 0.55f),
+                        fontSize = 10.sp
+                    )
+                ),
+                valueFormatter = CartesianValueFormatter { _, y, _ -> y.toInt().toString() },
+                itemPlacer = VerticalAxis.ItemPlacer.count(count = { 4 })
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                label = rememberAxisLabelComponent(
+                    style = TextStyle(
+                        color = LpzDark.copy(alpha = 0.68f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                ),
+                valueFormatter = CartesianValueFormatter { _, x, _ ->
+                    labels.getOrElse(x.toInt()) { "" }
+                }
+            )
+        ),
+        modelProducer = viewModel.userChartModelProducer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+    )
+}
+
+@Composable
+private fun UserChartLoadingState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = LpzRed,
+            strokeWidth = 2.5.dp,
+            modifier = Modifier.size(32.dp)
+        )
+    }
+}
+
+@Composable
+private fun UserChartEmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Sin registros en los ultimos 7 dias",
+            color = LpzDark.copy(alpha = 0.50f),
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -676,28 +851,6 @@ private fun StatCard(
                 letterSpacing = 0.5.sp
             )
         }
-    }
-}
-
-@Composable
-private fun MiniMetric(
-    label: String,
-    value: String
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = LpzDark.copy(alpha = 0.45f),
-            letterSpacing = 0.5.sp
-        )
-        Text(
-            text = value,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = LpzDark
-        )
     }
 }
 

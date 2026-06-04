@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 data class Supplier (
     val id: Int,
     val name: String,
-    val telephone: String,
-    val email: String
+    val telephone: String? = null,
+    val email: String? = null
 )

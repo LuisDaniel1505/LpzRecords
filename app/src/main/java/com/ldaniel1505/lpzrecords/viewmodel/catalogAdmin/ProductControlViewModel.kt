@@ -176,7 +176,7 @@ class ProductControlViewModel : ViewModel() {
             product.title.isBlank() -> "Ingresa el nombre del producto."
             product.title.trim().length > InputValidators.PRODUCT_TITLE_MAX_LENGTH ->
                 "El nombre del producto no puede exceder 150 caracteres."
-            product.description.length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH ->
+            product.description.orEmpty().length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH ->
                 "La descripcion no puede exceder 1000 caracteres."
             product.price <= 0.0 -> "El precio debe ser mayor a 0."
             !InputValidators.hasAtMostTwoDecimals(product.price) -> "El precio solo puede tener dos decimales."
@@ -215,12 +215,12 @@ class ProductControlViewModel : ViewModel() {
             fkArtist = fkArtist,
             fkSupplier = fkSupplier,
             title = title.trim(),
-            description = description.trim().ifBlank { null },
+            description = description?.trim()?.ifBlank { null },
             price = price,
             unitCost = unitCost,
             stock = stock,
             imageUrl = img_url?.trim()?.ifBlank { null },
-            releaseDate = release_date.trim().ifBlank { null },
+            releaseDate = release_date?.trim()?.ifBlank { null },
             active = active,
             createdAt = created_at.trim()
         )
@@ -232,12 +232,12 @@ class ProductControlViewModel : ViewModel() {
             fkArtist = fkArtist,
             fkSupplier = fkSupplier,
             title = title.trim(),
-            description = description.trim().ifBlank { null },
+            description = description?.trim()?.ifBlank { null },
             price = price,
             unitCost = unitCost,
             stock = stock,
             imageUrl = img_url?.trim()?.ifBlank { null },
-            releaseDate = release_date.trim().ifBlank { null },
+            releaseDate = release_date?.trim()?.ifBlank { null },
             active = active
         )
     }
