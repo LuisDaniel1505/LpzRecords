@@ -59,6 +59,16 @@ fun AppNavigation() {
         }
     }
 
+    fun clearSessionState() {
+        cartViewModel.clearCart()
+        favoritesViewModel.clearFavorites()
+        checkoutViewModel.resetCheckoutState()
+        profileViewModel.clearProfile()
+        addressViewModel.clearState()
+        paymentMethodsViewModel.clearState()
+        ordersViewModel.clearState()
+    }
+
     NavHost(
         navController = navController,
         startDestination = Screen.Main.route
@@ -89,9 +99,19 @@ fun AppNavigation() {
 
         composable(Screen.Admin.route) {
             AdminHostScreen(
+                profileViewModel = profileViewModel,
                 onLogout = {
+                    clearSessionState()
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Admin.route) { inclusive = true }
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onUnauthorized = {
+                    clearSessionState()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -172,13 +192,7 @@ fun AppNavigation() {
                 onNavigateToAddresses = { navController.navigate(Screen.Addresses.route) },
                 onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
                 onLogout = {
-                    cartViewModel.clearCart()
-                    favoritesViewModel.clearFavorites()
-                    checkoutViewModel.resetCheckoutState()
-                    profileViewModel.clearProfile()
-                    addressViewModel.clearState()
-                    paymentMethodsViewModel.clearState()
-                    ordersViewModel.clearState()
+                    clearSessionState()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }
                         launchSingleTop = true

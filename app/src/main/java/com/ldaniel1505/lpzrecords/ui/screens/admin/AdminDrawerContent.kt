@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,11 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.R
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 import kotlinx.coroutines.launch
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -32,7 +37,7 @@ enum class AdminSection(
     val icon: ImageVector
 ) {
     RESUMEN(   "Resumen",         Icons.Default.Home),
-    PRODUCTOS( "Productos",       Icons.Default.List),
+    PRODUCTOS( "Productos",       Icons.AutoMirrored.Filled.List),
     ENVIOS(    "Envíos y Pedidos", Icons.Default.ShoppingCart)
 }
 
@@ -47,9 +52,11 @@ enum class AdminSection(
 fun AdminDrawerContent(
     selectedSection: AdminSection,
     onSectionSelected: (AdminSection) -> Unit,
-    onLogout: () -> Unit
-    // TODO (BACKEND): Inyectar datos del usuario autenticado:
-    // adminName: String, adminRole: String
+    onLogout: () -> Unit,
+    adminName: String = "Administrador",
+    adminRole: String = "ADMINISTRADOR",
+    logoutError: String? = null,
+    isLoggingOut: Boolean = false
 ) {
     // Fondo oscuro — toda la superficie del drawer
     Column(
@@ -92,14 +99,15 @@ fun AdminDrawerContent(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text       = "LPZ",
+                text       = adminName,
                 fontSize   = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color      = Color.White
+                color      = Color.White,
+                maxLines   = 1,
+                overflow   = TextOverflow.Ellipsis
             )
             Text(
-                // TODO (BACKEND): Reemplazar con el rol real del usuario autenticado
-                text          = "PANEL DE CONTROL",
+                text          = adminRole,
                 fontSize      = 11.sp,
                 fontWeight    = FontWeight.Bold,
                 color         = LpzRed,
@@ -130,6 +138,16 @@ fun AdminDrawerContent(
         // ── Empuja "Cerrar Sesión" al fondo ───────────────────────────
         Spacer(modifier = Modifier.weight(1f))
 
+        logoutError?.let { message ->
+            Text(
+                text = message,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = LpzRed,
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 12.dp)
+            )
+        }
+
         HorizontalDivider(
             color     = Color.White.copy(alpha = 0.08f),
             thickness = 1.dp,
@@ -141,25 +159,34 @@ fun AdminDrawerContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    // TODO (BACKEND): adminViewModel.logout()
-                    onLogout()
+                    if (!isLoggingOut) {
+                        onLogout()
+                    }
                 }
                 .padding(horizontal = 22.dp, vertical = 20.dp),
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Icon(
-                imageVector        = Icons.Default.ExitToApp,
+                imageVector        = Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = "Cerrar sesión",
                 tint               = Color.White.copy(alpha = 0.55f),
                 modifier           = Modifier.size(20.dp)
             )
-            Text(
-                text       = "Cerrar Sesión",
-                fontSize   = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color      = Color.White.copy(alpha = 0.55f)
-            )
+            if (isLoggingOut) {
+                CircularProgressIndicator(
+                    color = Color.White.copy(alpha = 0.70f),
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(18.dp)
+                )
+            } else {
+                Text(
+                    text       = "Cerrar Sesión",
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color      = Color.White.copy(alpha = 0.55f)
+                )
+            }
         }
     }
 }
@@ -212,12 +239,64 @@ private fun DrawerMenuItem(
 
 @Composable
 fun AdminHostScreen(
-    onLogout: () -> Unit = {}
-    // TODO (BACKEND): Inyectar AdminHostViewModel = viewModel()
+    profileViewModel: ProfileViewModel = viewModel(),
+    onLogout: () -> Unit = {},
+    onUnauthorized: () -> Unit = {}
 ) {
     val drawerState     = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope           = rememberCoroutineScope()
     var selectedSection by remember { mutableStateOf(AdminSection.RESUMEN) }
+    val profileState by profileViewModel.uiState.collectAsState()
+    val adminRole = if (profileState.isAdmin) "ADMINISTRADOR" else "USUARIO"
+    val adminInitials = profileState.initials
+
+    LaunchedEffect(Unit) {
+        profileViewModel.loadProfile()
+    }
+
+    LaunchedEffect(profileState.logoutSuccess) {
+        if (profileState.logoutSuccess) {
+            profileViewModel.consumeLogoutSuccess()
+            onLogout()
+        }
+    }
+
+    LaunchedEffect(profileState.uid, profileState.isAdmin, profileState.isLoading) {
+        if (profileState.uid.isNotBlank() && !profileState.isLoading && !profileState.isAdmin) {
+            onUnauthorized()
+        }
+    }
+
+    LaunchedEffect(profileState.isUnauthenticated, profileState.isLoading) {
+        if (profileState.isUnauthenticated && !profileState.isLoading) {
+            onUnauthorized()
+        }
+    }
+
+    when {
+        profileState.isLoading && profileState.uid.isBlank() -> {
+            AdminGateState(message = "Cargando perfil de administrador...", showProgress = true)
+            return
+        }
+
+        profileState.errorMessage != null && profileState.uid.isBlank() -> {
+            AdminGateState(
+                message = if (profileState.isUnauthenticated) {
+                    "Redirigiendo al inicio de sesión..."
+                } else {
+                    profileState.errorMessage ?: "No se pudo cargar el perfil."
+                },
+                actionText = if (profileState.isUnauthenticated) null else "REINTENTAR",
+                onAction = { profileViewModel.loadProfile() }
+            )
+            return
+        }
+
+        profileState.uid.isNotBlank() && !profileState.isAdmin -> {
+            AdminGateState(message = "Redirigiendo al inicio de sesión...")
+            return
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState   = drawerState,
@@ -228,7 +307,11 @@ fun AdminHostScreen(
                     selectedSection = section
                     scope.launch { drawerState.close() }
                 },
-                onLogout = onLogout
+                onLogout = { profileViewModel.logout() },
+                adminName = profileState.displayName,
+                adminRole = adminRole,
+                logoutError = profileState.errorMessage,
+                isLoggingOut = profileState.isLoading
             )
         },
         scrimColor = Color.Black.copy(alpha = 0.50f)
@@ -236,6 +319,7 @@ fun AdminHostScreen(
         // ── Contenido según la sección activa ──────────────────────────
         when (selectedSection) {
             AdminSection.RESUMEN   -> AdminDashboardScreen(
+                adminInitials = adminInitials,
                 onOpenDrawer = {
                     scope.launch { drawerState.open() }
                 },
@@ -245,11 +329,13 @@ fun AdminHostScreen(
             )
             
             AdminSection.PRODUCTOS -> ProductControlScreen(
+                adminInitials = adminInitials,
                 onNavigateBack = {
                     scope.launch { drawerState.open() }
                 }
             )
             AdminSection.ENVIOS    -> OrderControlScreen(
+                adminInitials = adminInitials,
                 onOpenDrawer = {
                     scope.launch { drawerState.open() }
                 }
@@ -262,6 +348,55 @@ fun AdminHostScreen(
 //  PLACEHOLDERS de secciones aún no implementadas
 //  TODO (BACKEND): Reemplazar con AdminResumenScreen y AdminEnviosScreen reales
 // ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun AdminGateState(
+    message: String,
+    showProgress: Boolean = false,
+    actionText: String? = null,
+    onAction: () -> Unit = {}
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(LpzBeige),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            if (showProgress) {
+                CircularProgressIndicator(
+                    color = LpzRed,
+                    strokeWidth = 2.5.dp,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+
+            Text(
+                text = message,
+                color = LpzDark.copy(alpha = 0.60f),
+                fontSize = 15.sp
+            )
+
+            actionText?.let {
+                Button(
+                    onClick = onAction,
+                    colors = ButtonDefaults.buttonColors(containerColor = LpzRed),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun AdminResumenPlaceholder(onOpenDrawer: () -> Unit) {
@@ -306,7 +441,11 @@ private fun AdminEnviosPlaceholder(onOpenDrawer: () -> Unit) {
 // ── TopBar reutilizable para las secciones del admin ──────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminSectionTopBar(title: String, onOpenDrawer: () -> Unit) {
+fun AdminSectionTopBar(
+    title: String,
+    onOpenDrawer: () -> Unit,
+    adminInitials: String = "A"
+) {
     Column {
         TopAppBar(
             navigationIcon = {
@@ -327,7 +466,7 @@ fun AdminSectionTopBar(title: String, onOpenDrawer: () -> Unit) {
                         color      = LpzDark
                     )
                     Text(
-                        text          = "ADMIN",
+                        text          = title,
                         fontSize      = 12.sp,
                         fontWeight    = FontWeight.Bold,
                         color         = LpzRed,
@@ -345,8 +484,7 @@ fun AdminSectionTopBar(title: String, onOpenDrawer: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        // TODO (BACKEND): Mostrar iniciales reales del admin autenticado
-                        text       = "AD",
+                        text       = adminInitials,
                         fontSize   = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color      = Color.White

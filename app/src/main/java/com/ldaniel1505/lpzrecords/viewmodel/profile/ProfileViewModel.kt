@@ -23,7 +23,8 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    val logoutSuccess: Boolean = false
+    val logoutSuccess: Boolean = false,
+    val isUnauthenticated: Boolean = false
 ) {
     val displayName: String
         get() = name.ifBlank { email.ifBlank { "Cliente LPZ" } }
@@ -44,7 +45,13 @@ class ProfileViewModel : ViewModel() {
     fun loadProfile() {
         if (_uiState.value.isLoading) return
 
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                isUnauthenticated = false
+            )
+        }
 
         viewModelScope.launch {
             try {
@@ -55,7 +62,8 @@ class ProfileViewModel : ViewModel() {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "No se pudo identificar al usuario actual."
+                            errorMessage = "No se pudo identificar al usuario actual.",
+                            isUnauthenticated = true
                         )
                     }
                     return@launch
@@ -81,7 +89,8 @@ class ProfileViewModel : ViewModel() {
                         isAdmin = profile.is_admin,
                         isLoading = false,
                         errorMessage = null,
-                        successMessage = null
+                        successMessage = null,
+                        isUnauthenticated = false
                     )
                 }
             } catch (e: Exception) {

@@ -74,6 +74,7 @@ data class AdminOrder(
 
 @Composable
 fun OrderControlScreen(
+    adminInitials: String = "A",
     onOpenDrawer: () -> Unit = {},
     viewModel: AdminOrdersViewModel = viewModel()
     // TODO (BACKEND): Inyectar ViewModel:
@@ -93,7 +94,13 @@ fun OrderControlScreen(
     }
 
     Scaffold(
-        topBar         = { AdminSectionTopBar(title = "ENVIOS Y PEDIDOS", onOpenDrawer = onOpenDrawer) },
+        topBar         = {
+            AdminSectionTopBar(
+                title = "ENVÍOS Y PEDIDOS",
+                onOpenDrawer = onOpenDrawer,
+                adminInitials = adminInitials
+            )
+        },
         containerColor = Color.Transparent
     ) { innerPadding ->
 

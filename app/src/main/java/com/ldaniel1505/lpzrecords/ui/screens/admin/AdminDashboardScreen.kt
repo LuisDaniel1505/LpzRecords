@@ -73,6 +73,7 @@ import java.util.Locale
 
 @Composable
 fun AdminDashboardScreen(
+    adminInitials: String = "A",
     onOpenDrawer: () -> Unit = {},
     onNavigateToAllOrders: () -> Unit = {},
     onNavigateToOrderDetail: (String) -> Unit = {},
@@ -87,7 +88,7 @@ fun AdminDashboardScreen(
     Scaffold(
         topBar = {
             AdminTopBar(
-                adminInitials = uiState.adminInitials,
+                adminInitials = adminInitials,
                 onOpenDrawer = onOpenDrawer
             )
         },
@@ -651,7 +652,7 @@ private fun RecentOrdersHeader(onNavigateToAllOrders: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Ultimos pedidos",
+            text = "Últimos pedidos",
             fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             color = LpzDark
@@ -767,7 +768,7 @@ private fun AdminTopBar(
             IconButton(onClick = onOpenDrawer) {
                 Icon(
                     imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
+                    contentDescription = "Menú",
                     tint = LpzDark
                 )
             }
@@ -781,7 +782,7 @@ private fun AdminTopBar(
                     color = LpzDark
                 )
                 Text(
-                    text = "ADMIN",
+                    text = "RESUMEN",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzRed,

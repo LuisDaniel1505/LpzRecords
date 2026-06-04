@@ -48,6 +48,7 @@ import coil.compose.AsyncImage
 
 @Composable
 fun ProductControlScreen(
+    adminInitials: String = "A",
     onNavigateBack: () -> Unit = {},
     onNavigatetoAddProduct: (() -> Unit)? = null,
     viewModel: ProductControlViewModel = viewModel(),
@@ -133,7 +134,8 @@ fun ProductControlScreen(
         topBar = {
             AdminSectionTopBar(
                 title        = "PRODUCTOS",
-                onOpenDrawer = onNavigateBack
+                onOpenDrawer = onNavigateBack,
+                adminInitials = adminInitials
             )
         },
         containerColor = Color.Transparent
@@ -278,7 +280,7 @@ fun AdminProductCard(product: Product, onEdit: () -> Unit, onDelete: () -> Unit)
             ) {
                 Text(text = product.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LpzDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = product.artist?.name ?: "Artista sin asignar", fontSize = 12.sp, color = LpzDark.copy(alpha = 0.50f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = product.category?.name ?: "Sin categoria", fontSize = 11.sp, color = LpzDark.copy(alpha = 0.42f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = product.category?.name ?: "Sin categoría", fontSize = 11.sp, color = LpzDark.copy(alpha = 0.42f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(text = "$${String.format(Locale.US, "%.2f", product.price)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = LpzRed)
                 Spacer(modifier = Modifier.height(4.dp))
