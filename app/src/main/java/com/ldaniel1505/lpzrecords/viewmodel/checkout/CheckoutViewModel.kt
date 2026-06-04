@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ldaniel1505.lpzrecords.data.model.Address
 import com.ldaniel1505.lpzrecords.data.model.CartItem
-import com.ldaniel1505.lpzrecords.data.model.CreateSale
-import com.ldaniel1505.lpzrecords.data.model.CreateSaleDetail
 import com.ldaniel1505.lpzrecords.data.model.Order
 import com.ldaniel1505.lpzrecords.data.model.OrderItem
 import com.ldaniel1505.lpzrecords.data.model.PaymentMethod
@@ -14,10 +12,10 @@ import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
 import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +23,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.util.UUID
 
 data class CheckoutUiState(
@@ -100,6 +101,8 @@ class CheckoutViewModel : ViewModel() {
 
     fun confirmarCompra() {
         val currentState = _uiState.value
+        if (currentState.isSubmitting) return
+
         if (currentState.items.isEmpty()) {
             _uiState.update { it.copy(errorMessage = "Tu carrito esta vacio.") }
             return
@@ -122,9 +125,9 @@ class CheckoutViewModel : ViewModel() {
             return
         }
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
+        _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
+        viewModelScope.launch {
             val uid = SupabaseClient.client.auth.currentUserOrNull()?.id
 
             if (uid == null) {
@@ -149,36 +152,34 @@ class CheckoutViewModel : ViewModel() {
                         unitPrice = item.product.price
                     )
                 }
-                val saleDetails = currentState.items.map { item ->
-                    CreateSaleDetail(
-                        idSale = saleId,
-                        productId = item.product.id,
-                        quantity = item.quantity,
-                        unitPrice = item.product.price,
-                        unitCost = item.product.price
-                    )
-                }
 
                 withContext(Dispatchers.IO) {
-                    SupabaseClient.client
-                        .from("sales")
-                        .insert(
-                            CreateSale(
-                                idSale = saleId,
-                                userId = uid,
-                                idAddress = currentState.selectedAddress.idAddress,
-                                total = currentState.total,
-                                status = "PENDIENTE",
-                                paymentMethod = currentState.selectedPaymentMethod.displayName
-                            )
+                    SupabaseClient.client.postgrest
+                        .rpc(
+                            function = "confirm_sale_with_stock",
+                            parameters = buildJsonObject {
+                                put("sale_id", saleId)
+                                put("address_id", currentState.selectedAddress.idAddress)
+                                put("sale_total", currentState.total)
+                                put("payment_method_value", currentState.selectedPaymentMethod.displayName)
+                                put(
+                                    "items",
+                                    buildJsonArray {
+                                        currentState.items.forEach { item ->
+                                            add(
+                                                buildJsonObject {
+                                                    put("product_id", item.product.id)
+                                                    put("quantity", item.quantity)
+                                                    put("unit_price", item.product.price)
+                                                    put("unit_cost", item.product.price)
+                                                }
+                                            )
+                                        }
+                                    }
+                                )
+                            }
                         )
-
-                    SupabaseClient.client
-                        .from("sales_details")
-                        .insert(saleDetails)
                 }
-
-                delay(250)
 
                 val order = Order(
                     idSale = saleId,
@@ -202,7 +203,7 @@ class CheckoutViewModel : ViewModel() {
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        errorMessage = "No se pudo confirmar la orden. Intenta de nuevo."
+                        errorMessage = "No se pudo confirmar la orden. Verifica que el stock siga disponible e intenta de nuevo."
                     )
                 }
             }

@@ -2,101 +2,95 @@ package com.ldaniel1505.lpzrecords.ui.screens.admin
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ldaniel1505.lpzrecords.ui.theme.*
-import com.ldaniel1505.lpzrecords.viewmodel.dashboard.DashboardViewModel
+import com.ldaniel1505.lpzrecords.data.model.AdminRecentOrder
+import com.ldaniel1505.lpzrecords.data.model.IngresosPeriodo
+import com.ldaniel1505.lpzrecords.data.model.PeriodoIngresos
+import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
+import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
+import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.viewmodel.dashboard.AdminDashboardViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import com.ldaniel1505.lpzrecords.data.model.PeriodoIngresos
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  MODELOS DE DATOS
-//  TODO (BACKEND): Mover a data/model/AdminDashboard.kt cuando el backend esté listo.
-// ═══════════════════════════════════════════════════════════════════════════
-
-
-
-data class RecentOrder(
-    val id: Int,
-    val customerName: String,
-    val orderId: String,
-    val date: String,
-    val total: Double,
-    val status: OrderStatusAdmin
-)
-
-enum class OrderStatusAdmin(val label: String, val color: Color) {
-    PENDING("PENDIENTE", Color(0xFF8B0000)),
-    SHIPPED("ENVIADO",   Color(0xFF1565C0)),
-    DELIVERED("ENTREGADO", Color(0xFF2E7D32)),
-    CANCELLED("CANCELADO", Color(0xFF757575))
-}
-
-// ── Datos de ejemplo — eliminar cuando el ViewModel provea datos reales ──────
-private val sampleRecentOrders = listOf(
-    RecentOrder(1, "Luis Ontiveros", "1234", "10 Mayo", 85.00, OrderStatusAdmin.PENDING),
-    RecentOrder(2, "Luis Ontiveros", "1234", "10 Mayo", 85.00, OrderStatusAdmin.SHIPPED),
-    RecentOrder(3, "Luis Ontiveros", "1234", "10 Mayo", 85.00, OrderStatusAdmin.DELIVERED)
-)
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PANTALLA PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════════════
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.Position
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import java.util.Locale
 
 @Composable
 fun AdminDashboardScreen(
+    onOpenDrawer: () -> Unit = {},
     onNavigateToAllOrders: () -> Unit = {},
-    onNavigateToOrderDetail: (Int) -> Unit = {},
-    viewModel: DashboardViewModel = viewModel()
+    onNavigateToOrderDetail: (String) -> Unit = {},
+    viewModel: AdminDashboardViewModel = viewModel()
 ) {
-    // TODO (BACKEND): Obtener métricas del mes desde el ViewModel.
-    // val uiState        by adminViewModel.uiState.collectAsState()
-    // val monthlyRevenue = uiState.monthlyRevenue
-    // val pendingShipments = uiState.pendingShipments
-    // val totalProducts  = uiState.totalProducts
-    // val recentOrders   = uiState.recentOrders
-    val monthlyRevenue   = 4_250.00   // Placeholder
-    val pendingShipments = 1           // Placeholder
-    val totalProducts    = 6           // Placeholder
-    val recentOrders     = sampleRecentOrders
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadData()
-        //viewModel.loadIngresosMensuales()  // gráfica de ingresos
+        viewModel.loadDashboard()
     }
 
     Scaffold(
-        topBar = { AdminTopBar() },
+        topBar = {
+            AdminTopBar(
+                adminInitials = uiState.adminInitials,
+                onOpenDrawer = onOpenDrawer
+            )
+        },
         containerColor = LpzBeige
     ) { innerPadding ->
         Column(
@@ -105,23 +99,149 @@ fun AdminDashboardScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            RevenueCard(monthlyRevenue = monthlyRevenue)
+            uiState.errorMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = LpzRed,
+                    fontSize = 13.sp
+                )
+            }
 
-            Text(text = "Resumen de Usuarios", style = MaterialTheme.typography.headlineSmall)
+            RevenueCard(
+                totalRevenue = uiState.totalRevenue,
+                isLoading = uiState.isLoading
+            )
+
+            UsersChartSection(
+                totalUsers = uiState.totalUsers,
+                usersToday = uiState.usersToday,
+                viewModel = viewModel
+            )
+
+            RevenueChartSection(viewModel = viewModel)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                StatCard(
+                    value = uiState.totalProducts.toString(),
+                    label = "PRODUCTOS",
+                    accentColor = Color(0xFFC0D8F0),
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    value = uiState.totalUsers.toString(),
+                    label = "USUARIOS",
+                    accentColor = Color(0xFFE8C4B8),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            RecentOrdersHeader(onNavigateToAllOrders = onNavigateToAllOrders)
+
+            if (uiState.recentOrders.isEmpty() && !uiState.isLoading) {
+                EmptyOrdersCard()
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    uiState.recentOrders.forEach { order ->
+                        RecentOrderCard(
+                            order = order,
+                            onClick = { onNavigateToOrderDetail(order.idSale) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun RevenueCard(
+    totalRevenue: Double,
+    isLoading: Boolean
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "INGRESOS REGISTRADOS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark.copy(alpha = 0.50f),
+                    letterSpacing = 0.8.sp
+                )
+                Text(
+                    text = if (isLoading) "..." else money(totalRevenue),
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark
+                )
+            }
 
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-            )
-                {
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF0E8E8)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzRed
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UsersChartSection(
+    totalUsers: Int,
+    usersToday: Int,
+    viewModel: AdminDashboardViewModel
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = "Resumen de usuarios",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = LpzDark
+        )
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 CartesianChartHost(
                     chart = rememberCartesianChart(
                         rememberColumnCartesianLayer(),
-                        startAxis = VerticalAxis.rememberStart(title = { "Usuarios" }),
+                        startAxis = VerticalAxis.rememberStart(),
                         bottomAxis = HorizontalAxis.rememberBottom(
+                            label = rememberAxisLabelComponent(),
                             valueFormatter = CartesianValueFormatter { _, x, _ ->
                                 when (x.toInt()) {
                                     0 -> "Total"
@@ -131,302 +251,107 @@ fun AdminDashboardScreen(
                             }
                         )
                     ),
-                    modelProducer = viewModel.chartModelProducer,
-                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                    modelProducer = viewModel.userChartModelProducer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
                 )
-            }
-            // GRÁFICO VICO ESTABLE
-            //Ingresos por mes ───────────────────────
-            RevenueChartSection(viewModel = viewModel)
 
-            // ── Fila de stats ─────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                StatCard(
-                    value = totalProducts.toString(),
-                    label = "PRODUCTOS\nTOTALES",
-                    accentColor = Color(0xFFC0D8F0),
-                    modifier = Modifier.weight(1f)
+                HorizontalDivider(
+                    color = Color.Gray.copy(alpha = 0.12f),
+                    thickness = 1.dp
                 )
-            }
 
-            // ── Sección: Últimos Pedidos ─────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "Ultimos Pedidos", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = LpzDark)
-                Text(text = "VER TODOS", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LpzRed, modifier = Modifier.clickable(onClick = onNavigateToAllOrders))
-            }
-
-            // ── Lista de pedidos ─────────────────────────────────
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                recentOrders.forEach { order ->
-                    RecentOrderCard(order = order, onClick = { onNavigateToOrderDetail(order.id) })
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    MiniMetric(label = "TOTAL", value = totalUsers.toString())
+                    MiniMetric(label = "NUEVOS HOY", value = usersToday.toString())
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPONENTES INTERNOS
-// ═══════════════════════════════════════════════════════════════════════════
-
 @Composable
-private fun RevenueCard(monthlyRevenue: Double) {
-    Card(
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier  = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text          = "INGRESOS DEL MES",
-                    fontSize      = 11.sp,
-                    fontWeight    = FontWeight.Bold,
-                    color         = LpzDark.copy(alpha = 0.50f),
-                    letterSpacing = 0.8.sp
-                )
-                Text(
-                    // TODO (BACKEND): adminViewModel.monthlyRevenue
-                    text       = "$${String.format("%,.2f", monthlyRevenue)}",
-                    fontSize   = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color      = LpzDark
-                )
-            }
-            // Placeholder de ícono/gráfica
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF0E8E8))
-                // TODO: Reemplazar con un ícono de tendencia o mini-gráfica
-            )
-        }
-    }
-}
-@Composable
-private fun RevenueChartSection(viewModel: DashboardViewModel) {
-
+private fun RevenueChartSection(viewModel: AdminDashboardViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-
-        // ── Encabezado ─────────────────────────────────────────────────
         Text(
-            text       = "Ingresos por Período",
-            fontSize   = 17.sp,
+            text = "Ingresos por periodo",
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
-            color      = LpzDark
+            color = LpzDark
         )
 
-        //    Cuando el usuario toca uno, llama a seleccionarPeriodo() en
-        //    el ViewModel, que actualiza selectedPeriodo y recarga los datos.
         Row(
-            modifier              = Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             PeriodoIngresos.entries.forEach { periodo ->
-                val estaSeleccionado = viewModel.selectedPeriodo == periodo
+                val isSelected = viewModel.selectedPeriodo == periodo
 
                 FilterChip(
-                    selected = estaSeleccionado,
-                    onClick  = {
-                        viewModel.seleccionarPeriodo(periodo)
-                    },
-                    label    = {
+                    selected = isSelected,
+                    onClick = { viewModel.seleccionarPeriodo(periodo) },
+                    label = {
                         Text(
-                            text       = periodo.label,
-                            fontSize   = 13.sp,
-                            fontWeight = if (estaSeleccionado) FontWeight.Bold
-                            else FontWeight.Normal
+                            text = periodo.label,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor  = LpzRed,
-                        selectedLabelColor      = Color.White,
-                        containerColor          = Color.White,
-                        labelColor              = LpzDark
+                        selectedContainerColor = LpzRed,
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = LpzDark
                     ),
                     border = FilterChipDefaults.filterChipBorder(
-                        enabled          = true,
-                        selected         = estaSeleccionado,
-                        borderColor      = LpzDark.copy(alpha = 0.20f),
+                        enabled = true,
+                        selected = isSelected,
+                        borderColor = LpzDark.copy(alpha = 0.20f),
                         selectedBorderColor = LpzRed
                     )
                 )
             }
         }
 
-        // ── Tarjeta con la gráfica ─────────────────────────────────────
         Card(
-            shape     = RoundedCornerShape(16.dp),
-            colors    = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            modifier  = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier            = Modifier.padding(16.dp),
+                modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text          = viewModel.selectedPeriodo.descripcion,
-                    fontSize      = 11.sp,
-                    fontWeight    = FontWeight.Bold,
-                    color         = LpzDark.copy(alpha = 0.45f),
+                    text = viewModel.selectedPeriodo.descripcion,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzDark.copy(alpha = 0.45f),
                     letterSpacing = 0.6.sp
                 )
 
                 when {
-                    // ── Estado: Cargando ───────────────────────────────
                     viewModel.isLoadingRevenue -> {
-                        Box(
-                            modifier         = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    color       = LpzRed,
-                                    strokeWidth = 2.5.dp,
-                                    modifier    = Modifier.size(36.dp)
-                                )
-                                Text(
-                                    text     = "Cargando ${viewModel.selectedPeriodo.label.lowercase()}...",
-                                    fontSize = 12.sp,
-                                    color    = LpzDark.copy(alpha = 0.45f)
-                                )
-                            }
-                        }
+                        ChartLoadingState(label = viewModel.selectedPeriodo.label)
                     }
 
-                    // ── Estado: Error ──────────────────────────────────
                     viewModel.errorRevenue != null -> {
-                        Box(
-                            modifier         = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text      = viewModel.errorRevenue ?: "",
-                                color     = LpzRed,
-                                fontSize  = 13.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                        ChartMessageState(message = viewModel.errorRevenue ?: "")
                     }
 
-                    // ── Estado: Sin datos ──────────────────────────────
                     viewModel.ingresosPeriodo.isEmpty() -> {
-                        Box(
-                            modifier         = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text      = "Sin ventas en este período",
-                                color     = LpzDark.copy(alpha = 0.40f),
-                                fontSize  = 14.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                        ChartMessageState(message = "Sin ventas en este periodo")
                     }
 
-                    // ── Estado: Con datos → Gráfica ────────────────────
                     else -> {
-                        val labels = viewModel.labelsIngresos
-
-                        CartesianChartHost(
-                            chart = rememberCartesianChart(
-                                rememberLineCartesianLayer(),
-                                startAxis  = VerticalAxis.rememberStart(),
-                                bottomAxis = HorizontalAxis.rememberBottom(
-                                    label = rememberAxisLabelComponent(),
-                                    valueFormatter = CartesianValueFormatter { _, x, _ ->
-                                        // x = índice (0, 1, 2 …) → label del período
-                                        labels.getOrElse(x.toInt()) { "" }
-                                    }
-                                )
-                            ),
-                            modelProducer = viewModel.revenueModelProducer,
-                            modifier      = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp)
-                        )
-
-                        // ── Fila de resumen debajo de la gráfica ───────
-                        val mejorPeriodo = viewModel.ingresosPeriodo
-                            .maxByOrNull { it.ingresos }
-                        val totalAcum = viewModel.ingresosPeriodo
-                            .sumOf { it.ingresos }
-
-                        HorizontalDivider(
-                            color     = Color.Gray.copy(alpha = 0.12f),
-                            thickness = 1.dp
-                        )
-
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(horizontalAlignment = Alignment.Start) {
-                                Text(
-                                    text          = "MEJOR PERÍODO",
-                                    fontSize      = 10.sp,
-                                    fontWeight    = FontWeight.Bold,
-                                    color         = LpzDark.copy(alpha = 0.45f),
-                                    letterSpacing = 0.6.sp
-                                )
-                                Text(
-                                    text       = mejorPeriodo?.label ?: "—",
-                                    fontSize   = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color      = LpzDark
-                                )
-                                Text(
-                                    text       = "$${String.format("%,.2f", mejorPeriodo?.ingresos ?: 0.0)}",
-                                    fontSize   = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = LpzRed
-                                )
-                            }
-                            // Total acumulado del período visible
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text          = "TOTAL ${viewModel.selectedPeriodo.label.uppercase()}",
-                                    fontSize      = 10.sp,
-                                    fontWeight    = FontWeight.Bold,
-                                    color         = LpzDark.copy(alpha = 0.45f),
-                                    letterSpacing = 0.6.sp
-                                )
-                                Text(
-                                    text       = "$${String.format("%,.2f", totalAcum)}",
-                                    fontSize   = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = LpzDark
-                                )
-                            }
-                        }
+                        RevenueLineChart(viewModel = viewModel)
                     }
                 }
             }
@@ -435,7 +360,228 @@ private fun RevenueChartSection(viewModel: DashboardViewModel) {
 }
 
 @Composable
+private fun RevenueLineChart(viewModel: AdminDashboardViewModel) {
+    val labels = viewModel.labelsIngresos
+    val bestPeriod = viewModel.ingresosPeriodo.maxByOrNull { it.ingresos }
+    val accumulated = viewModel.ingresosPeriodo.sumOf { it.ingresos }
+    val showPointLabels = viewModel.ingresosPeriodo.count { it.ingresos > 0.0 } <= 8
+    val lineColor = Color(0xFF4B83E6)
+    val dataLabelBackground = rememberShapeComponent(
+        fill = Fill(Color.White.copy(alpha = 0.94f)),
+        shape = RoundedCornerShape(6.dp),
+        strokeFill = Fill(LpzDark.copy(alpha = 0.10f)),
+        strokeThickness = 1.dp
+    )
+    val axisLabelBackground = rememberShapeComponent(
+        fill = Fill(Color.White.copy(alpha = 0.82f)),
+        shape = RoundedCornerShape(5.dp)
+    )
+    val pointComponent = rememberShapeComponent(
+        fill = Fill(Color.White),
+        shape = CircleShape,
+        strokeFill = Fill(lineColor),
+        strokeThickness = 2.dp
+    )
+    val revenueLine = LineCartesianLayer.rememberLine(
+        fill = LineCartesianLayer.LineFill.single(Fill(lineColor)),
+        stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 2.dp),
+        pointProvider = LineCartesianLayer.PointProvider.single(
+            LineCartesianLayer.Point(
+                component = pointComponent,
+                size = 8.dp
+            )
+        ),
+        dataLabel = if (showPointLabels) {
+            rememberAxisLabelComponent(
+                style = TextStyle(
+                    color = LpzDark,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                padding = Insets(horizontal = 5.dp, vertical = 2.dp),
+                background = dataLabelBackground
+            )
+        } else {
+            null
+        },
+        dataLabelPosition = Position.Vertical.Top,
+        dataLabelValueFormatter = CartesianValueFormatter { _, y, _ ->
+            moneyChartLabel(y)
+        }
+    )
 
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            rememberLineCartesianLayer(
+                lineProvider = LineCartesianLayer.LineProvider.series(revenueLine)
+            ),
+            startAxis = VerticalAxis.rememberStart(
+                label = rememberAxisLabelComponent(
+                    style = TextStyle(
+                        color = LpzDark.copy(alpha = 0.74f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    padding = Insets(horizontal = 4.dp, vertical = 1.dp),
+                    background = axisLabelBackground
+                ),
+                horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
+                valueFormatter = CartesianValueFormatter { _, y, _ ->
+                    moneyAxis(y)
+                },
+                itemPlacer = VerticalAxis.ItemPlacer.count(count = { 5 })
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                label = rememberAxisLabelComponent(
+                    style = TextStyle(
+                        color = LpzDark.copy(alpha = 0.74f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                ),
+                labelRotationDegrees = if (labels.size > 8) -28f else 0f,
+                valueFormatter = CartesianValueFormatter { _, x, _ ->
+                    labels.getOrElse(x.toInt()) { "" }
+                },
+                itemPlacer = HorizontalAxis.ItemPlacer.aligned(
+                    spacing = { axisLabelSpacing(labels.size) }
+                )
+            )
+        ),
+        modelProducer = viewModel.revenueModelProducer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(250.dp)
+    )
+
+    RevenuePeriodValues(items = viewModel.ingresosPeriodo)
+
+    HorizontalDivider(
+        color = Color.Gray.copy(alpha = 0.12f),
+        thickness = 1.dp
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(horizontalAlignment = Alignment.Start) {
+            Text(
+                text = "MEJOR PERIODO",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark.copy(alpha = 0.45f),
+                letterSpacing = 0.6.sp
+            )
+            Text(
+                text = bestPeriod?.label ?: "-",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = LpzDark
+            )
+            Text(
+                text = money(bestPeriod?.ingresos ?: 0.0),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzRed
+            )
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "TOTAL ${viewModel.selectedPeriodo.label.uppercase()}",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark.copy(alpha = 0.45f),
+                letterSpacing = 0.6.sp
+            )
+            Text(
+                text = money(accumulated),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark
+            )
+        }
+    }
+}
+
+@Composable
+private fun RevenuePeriodValues(items: List<IngresosPeriodo>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items.forEach { item ->
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = item.label,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = LpzDark.copy(alpha = 0.68f)
+                )
+                Text(
+                    text = money(item.ingresos),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LpzRed
+                )
+                Text(
+                    text = "${item.totalVentas} ventas",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = LpzDark.copy(alpha = 0.45f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChartLoadingState(label: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CircularProgressIndicator(
+                color = LpzRed,
+                strokeWidth = 2.5.dp,
+                modifier = Modifier.size(36.dp)
+            )
+            Text(
+                text = "Cargando ${label.lowercase()}...",
+                fontSize = 12.sp,
+                color = LpzDark.copy(alpha = 0.45f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChartMessageState(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            color = LpzDark.copy(alpha = 0.50f),
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
 private fun StatCard(
     value: String,
     label: String,
@@ -443,86 +589,132 @@ private fun StatCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier  = modifier
+        modifier = modifier
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Placeholder de ícono con color de acento
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(accentColor)
-                // TODO: Reemplazar con ícono real (truck/package)
             )
             Text(
-                // TODO (BACKEND): adminViewModel.pendingShipments / totalProducts
-                text       = value,
-                fontSize   = 28.sp,
+                text = value,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color      = LpzDark
+                color = LpzDark
             )
             Text(
-                text          = label,
-                fontSize      = 11.sp,
-                fontWeight    = FontWeight.Bold,
-                color         = LpzDark.copy(alpha = 0.50f),
-                letterSpacing = 0.5.sp,
-                lineHeight    = 15.sp
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LpzDark.copy(alpha = 0.50f),
+                letterSpacing = 0.5.sp
             )
         }
     }
 }
 
 @Composable
+private fun MiniMetric(
+    label: String,
+    value: String
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = LpzDark.copy(alpha = 0.45f),
+            letterSpacing = 0.5.sp
+        )
+        Text(
+            text = value,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = LpzDark
+        )
+    }
+}
+
+@Composable
+private fun RecentOrdersHeader(onNavigateToAllOrders: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Ultimos pedidos",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = LpzDark
+        )
+        Text(
+            text = "VER TODOS",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = LpzRed,
+            modifier = Modifier.clickable(onClick = onNavigateToAllOrders)
+        )
+    }
+}
+
+@Composable
 private fun RecentOrderCard(
-    order: RecentOrder,
+    order: AdminRecentOrder,
     onClick: () -> Unit
 ) {
     Card(
-        shape     = RoundedCornerShape(14.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier  = Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
         Row(
-            modifier              = Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalAlignment     = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Placeholder de foto de perfil / portada de orden
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(LpzDark)
-                // TODO (BACKEND + COIL): AsyncImage con foto del cliente o portada del producto
-            )
+                    .background(LpzDark),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = order.customerName.toInitials(),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
 
             Column(
-                modifier            = Modifier.weight(1f),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    // TODO (BACKEND): order.customerName vendrá del objeto User asociado
-                    text       = order.customerName,
-                    fontSize   = 14.sp,
+                    text = order.customerName,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = LpzDark
+                    color = LpzDark
                 )
                 Text(
-                    text     = "ID: ${order.orderId} · ${order.date}",
+                    text = order.summaryLine(),
                     fontSize = 12.sp,
-                    color    = LpzDark.copy(alpha = 0.45f)
+                    color = LpzDark.copy(alpha = 0.45f)
                 )
             }
 
@@ -531,17 +723,16 @@ private fun RecentOrderCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    // TODO (BACKEND): order.total vendrá calculado desde el servidor
-                    text       = "$${String.format("%.2f", order.total)}",
-                    fontSize   = 14.sp,
+                    text = money(order.total),
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = LpzDark
+                    color = LpzDark
                 )
                 Text(
-                    text          = order.status.label,
-                    fontSize      = 11.sp,
-                    fontWeight    = FontWeight.Bold,
-                    color         = order.status.color,
+                    text = order.status.ifBlank { "SIN ESTADO" },
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = statusColor(order.status),
                     letterSpacing = 0.3.sp
                 )
             }
@@ -549,40 +740,51 @@ private fun RecentOrderCard(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  TOP BAR
-// ═══════════════════════════════════════════════════════════════════════════
+@Composable
+private fun EmptyOrdersCard() {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "No hay pedidos registrados.",
+            modifier = Modifier.padding(18.dp),
+            color = LpzDark.copy(alpha = 0.55f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AdminTopBar() {
-    // TODO (BACKEND): Obtener initiales y nombre del admin autenticado.
-    // val adminInitials = adminViewModel.currentAdmin.initials
-    val adminInitials = "AD" // Placeholder
-
+private fun AdminTopBar(
+    adminInitials: String,
+    onOpenDrawer: () -> Unit
+) {
     TopAppBar(
         navigationIcon = {
-            IconButton(onClick = { /* TODO: Abrir menú lateral (DrawerLayout) */ }) {
+            IconButton(onClick = onOpenDrawer) {
                 Icon(
-                    imageVector        = Icons.Default.Menu,
-                    contentDescription = "Menú",
-                    tint               = LpzDark
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = LpzDark
                 )
             }
         },
         title = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text       = "LPZ RECORDS",
-                    fontSize   = 18.sp,
+                    text = "LPZ RECORDS",
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = LpzDark
+                    color = LpzDark
                 )
                 Text(
-                    text       = "ADMIN",
-                    fontSize   = 12.sp,
+                    text = "ADMIN",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = LpzRed,
+                    color = LpzRed,
                     letterSpacing = 1.sp
                 )
             }
@@ -597,11 +799,10 @@ private fun AdminTopBar() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    // TODO (BACKEND): adminViewModel.currentAdmin.initials
-                    text       = adminInitials,
-                    fontSize   = 13.sp,
+                    text = adminInitials,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = Color.White
+                    color = Color.White
                 )
             }
         },
@@ -609,9 +810,47 @@ private fun AdminTopBar() {
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREVIEW
-// ═══════════════════════════════════════════════════════════════════════════
+private fun statusColor(status: String): Color = when (status.uppercase()) {
+    "PAGADO", "PAGADA", "COMPLETADO", "COMPLETADA", "ENTREGADO", "ENTREGADA" -> Color(0xFF2E7D32)
+    "ENVIADO" -> Color(0xFF1565C0)
+    "CANCELADO", "CANCELADA" -> Color(0xFF757575)
+    else -> Color(0xFF8B0000)
+}
+
+private fun money(value: Double): String {
+    return "$${String.format(Locale.US, "%,.2f", value)}"
+}
+
+private fun moneyAxis(value: Double): String {
+    return "$${String.format(Locale.US, "%,.0f", value)}"
+}
+
+private fun moneyChartLabel(value: Double): String {
+    return if (value <= 0.0) "" else moneyAxis(value)
+}
+
+private fun AdminRecentOrder.summaryLine(): String {
+    val date = createdAt.take(10).ifBlank { "Sin fecha" }
+    val items = if (itemCount > 0) " - $itemCount art." else ""
+    return "ID: ${idSale.takeLast(8)} - $date$items"
+}
+
+private fun axisLabelSpacing(labelCount: Int): Int {
+    return when {
+        labelCount <= 8 -> 1
+        labelCount <= 14 -> 2
+        labelCount <= 24 -> 3
+        else -> 5
+    }
+}
+
+private fun String.toInitials(): String {
+    return split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.first().uppercaseChar().toString() }
+        .ifBlank { "?" }
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,7 +59,7 @@ fun ProductControlScreen(
 
 
     var searchQuery     by remember { mutableStateOf("") }
-    var productToDesactivate by remember { mutableStateOf<Product?>(null) }
+    var productToDeactivate by remember { mutableStateOf<Product?>(null) }
     var productToEdit   by remember { mutableStateOf<Product?>(null) }
     var showAddDialog   by remember { mutableStateOf(false) }
 
@@ -76,15 +78,15 @@ fun ProductControlScreen(
     }
 
     // Pregunta si desea eliminar (Desactivar)
-    if (productToDesactivate != null) {
-        productToDesactivate?.let { product ->
+    if (productToDeactivate != null) {
+        productToDeactivate?.let { product ->
             DeleteConfirmDialog(
                 onConfirm = {
                     viewModel.deactivateProduct(product)
-                    productToDesactivate = null
+                    productToDeactivate = null
                 },
                 onDismiss = {
-                    productToDesactivate = null
+                    productToDeactivate = null
                 }
             )
         }
@@ -102,9 +104,9 @@ fun ProductControlScreen(
 
                 val productData = Product(
                     id = id.ifBlank { productToEdit?.id ?: java.util.UUID.randomUUID().toString() },
-                    fkCategory = category.id,
-                    fkArtist = artist.id,
-                    fkSupplier = supplier.id,
+                    fkCategory = category.id.takeIf { it > 0 },
+                    fkArtist = artist.id.takeIf { it > 0 },
+                    fkSupplier = supplier.id.takeIf { it > 0 },
                     title = title,
                     description = description,
                     price = price,
@@ -199,6 +201,18 @@ fun ProductControlScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
+                if (viewModel.successMessage != null) {
+                    Text(
+                        text = viewModel.successMessage!!,
+                        color = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF2E7D32))
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 //Muestra estado de stock por color
                 if (isLoading) {
@@ -223,7 +237,7 @@ fun ProductControlScreen(
                             AdminProductCard(
                                 product  = product,
                                 onEdit   = { productToEdit = product },
-                                onDelete = { productToDesactivate = product }
+                                onDelete = { productToDeactivate = product }
                             )
                         }
                     }
@@ -238,7 +252,7 @@ fun ProductControlScreen(
 
 @Composable
 fun AdminProductCard(product: Product, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val isOutOfStock = product.stock == 0
+    val isOutOfStock = product.stock <= 0
     Card(
         shape     = RoundedCornerShape(14.dp),
         colors    = CardDefaults.cardColors(containerColor = Color.White),
@@ -263,11 +277,15 @@ fun AdminProductCard(product: Product, onEdit: () -> Unit, onDelete: () -> Unit)
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(text = product.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LpzDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = product.artist?.name?:"", fontSize = 12.sp, color = LpzDark.copy(alpha = 0.50f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = product.artist?.name ?: "Artista sin asignar", fontSize = 12.sp, color = LpzDark.copy(alpha = 0.50f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = product.category?.name ?: "Sin categoria", fontSize = 11.sp, color = LpzDark.copy(alpha = 0.42f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(text = "$${String.format(Locale.US, "%.2f", product.price)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = LpzRed)
                 Spacer(modifier = Modifier.height(4.dp))
-                StockBadge(stock = product.stock, isOutOfStock = isOutOfStock)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StockBadge(stock = product.stock, isOutOfStock = isOutOfStock)
+                    ProductStatusBadge(active = product.active)
+                }
             }
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -281,12 +299,28 @@ fun AdminProductCard(product: Product, onEdit: () -> Unit, onDelete: () -> Unit)
                 )
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Eliminar",
+                    contentDescription = "Ocultar",
                     tint = LpzRed,
                     modifier = Modifier.size(22.dp).clickable(onClick = onDelete)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ProductStatusBadge(active: Boolean) {
+    val bgColor = if (active) Color(0xFFE8F5E9) else Color(0xFFE0E0E0)
+    val textColor = if (active) Color(0xFF2E7D32) else Color(0xFF616161)
+
+    Surface(shape = RoundedCornerShape(6.dp), color = bgColor) {
+        Text(
+            text = if (active) "Activo" else "Oculto",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = textColor,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+        )
     }
 }
 
@@ -328,7 +362,7 @@ fun DeleteConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(28.dp)
             ) {
-                Text(text = "¿Seguro que\ndesea eliminar?", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = LpzDark, textAlign = TextAlign.Center, lineHeight = 30.sp)
+                Text(text = "¿Ocultar este\nproducto?", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = LpzDark, textAlign = TextAlign.Center, lineHeight = 30.sp)
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -372,15 +406,18 @@ fun ProductFormDialog(
     val availableCategories = viewModelCategory.categories
     val availableArtist = viewModelArtist.artists
     val availableSupplier = viewModelSupplier.suppliers
+    val supplierOptions = remember(availableSupplier) {
+        listOf(Supplier(id = 0, name = "Sin proveedor", telephone = "", email = "")) + availableSupplier
+    }
 
     var selectedCategory by remember(existingProduct) {
-        mutableStateOf(existingProduct?.category ?: Category(id = 0, name = "Seleccione una categoría"))
+        mutableStateOf(existingProduct?.category ?: Category(id = 0, name = "Selecciona una categoria"))
     }
     var selectedArtist by remember(existingProduct) {
-        mutableStateOf(existingProduct?.artist ?: Artist(id = 0, name = "", biography = "", musical_genre = ""))
+        mutableStateOf(existingProduct?.artist ?: Artist(id = 0, name = "Selecciona un artista", biography = "", musical_genre = ""))
     }
     var selectedSupplier by remember(existingProduct) {
-        mutableStateOf(existingProduct?.supplier ?: Supplier(id = 0, name = "",  telephone = "", email = ""))
+        mutableStateOf(existingProduct?.supplier ?: Supplier(id = 0, name = "Sin proveedor", telephone = "", email = ""))
     }
     var title            by remember(existingProduct) { mutableStateOf(existingProduct?.title ?: "") }
     var description      by remember(existingProduct) { mutableStateOf(existingProduct?.description ?: "") }
@@ -397,11 +434,17 @@ fun ProductFormDialog(
 
 
 
-    // Validación del formulario mejorada
-    val isValid = title.isNotBlank() &&
-            priceStr.toDoubleOrNull() != null &&
-            stockStr.toIntOrNull() != null &&
-            release_date.isNotBlank()
+    val priceValue = priceStr.toDoubleOrNull()
+    val stockValue = stockStr.toIntOrNull()
+    val validationMessage = when {
+        title.isBlank() -> "Ingresa el nombre del producto."
+        selectedCategory.id <= 0 -> "Selecciona una categoria."
+        selectedArtist.id <= 0 -> "Selecciona un artista."
+        priceValue == null || priceValue <= 0.0 -> "El precio debe ser mayor a 0."
+        stockValue == null || stockValue < 0 -> "El stock no puede ser negativo."
+        else -> null
+    }
+    val isValid = validationMessage == null
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -527,8 +570,22 @@ fun ProductFormDialog(
 
                 // Fila de Precio y Stock
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FormFieldWhite(label = "Precio (\$)", value = priceStr, placeholder = "0.00", onValueChange = { priceStr = it }, modifier = Modifier.weight(1f))
-                    FormFieldWhite(label = "Stock", value = stockStr, placeholder = "0", onValueChange = { stockStr = it }, modifier = Modifier.weight(1f))
+                    FormFieldWhite(
+                        label = "Precio ($)",
+                        value = priceStr,
+                        placeholder = "0.00",
+                        onValueChange = { priceStr = sanitizePriceInput(it) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                    FormFieldWhite(
+                        label = "Stock",
+                        value = stockStr,
+                        placeholder = "0",
+                        onValueChange = { stockStr = it.filter(Char::isDigit).take(5) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
                 }
 
                 //Para seleccionar los Suppliers registrados
@@ -570,7 +627,7 @@ fun ProductFormDialog(
                             onDismissRequest = { dropdownExpandedSupplier = false },
                             modifier         = Modifier.background(Color.White)
                         ) {
-                            availableSupplier.forEach { supObj ->
+                            supplierOptions.forEach { supObj ->
                                 DropdownMenuItem(
                                     text = { Text(text = supObj.name, fontSize = 14.sp, color = LpzDark) },
                                     onClick = {
@@ -588,7 +645,7 @@ fun ProductFormDialog(
 
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
-                            value         = selectedArtist?.name ?: "",
+                            value         = selectedArtist.name,
                             onValueChange = {},
                             readOnly      = true,
                             trailingIcon  = {
@@ -710,19 +767,21 @@ fun ProductFormDialog(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Botón de Confirmación
+                validationMessage?.let { message ->
+                    Text(
+                        text = message,
+                        fontSize = 12.sp,
+                        color = LpzRed,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
                 Button(
                     onClick = {
                         if (isValid) {
-                            //  Usamos el estado real que cambia con los Dropdowns
-                            val artistObj   = selectedArtist ?: Artist(id = 0, name = "No tiene nombre", biography = "", musical_genre = "")
+                            val artistObj = selectedArtist
                             val supplierObj = selectedSupplier
-
-                           if(img_url.isBlank()){
-                                img_url = "https://static.vecteezy.com/system/resources/thumbnails/009/314/864/small/vinyl-record-vector-illustration-isolated-on-white-background-free-png.png"
-                            } else {
-                                img_url.trim()
-                            }
+                            val cleanImageUrl = img_url.trim().ifBlank { DEFAULT_PRODUCT_IMAGE_URL }
 
                             val timestampSeguro = if (created_at.isBlank() || created_at == "fechaSegura") {
                                 val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).apply {
@@ -740,12 +799,12 @@ fun ProductFormDialog(
                                 supplierObj,
                                 title.trim(),
                                 description.trim(),
-                                priceStr.toDoubleOrNull() ?: 0.0,
-                                stockStr.toIntOrNull() ?: 0,
-                                img_url,
-                                release_date.trim(), // Ya garantizamos con isValid que no irá vacío
+                                priceValue ?: 0.0,
+                                stockValue ?: 0,
+                                cleanImageUrl,
+                                release_date.trim(),
                                 active,
-                                timestampSeguro // <--- Enviamos el timestamp limpio a Supabase
+                                timestampSeguro
                             )
                         }
                     },
@@ -767,13 +826,21 @@ fun ProductFormDialog(
 //Componentes adicionales
 
 @Composable
-private fun FormFieldWhite(label: String, value: String, placeholder: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun FormFieldWhite(
+    label: String,
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = LpzDark.copy(alpha = 0.70f))
         OutlinedTextField(
             value         = value,
             onValueChange = onValueChange,
             singleLine    = true,
+            keyboardOptions = keyboardOptions,
             placeholder   = { Text(text = placeholder, fontSize = 14.sp, color = LpzDark.copy(alpha = 0.35f)) },
             modifier      = Modifier.fillMaxWidth(),
             shape         = RoundedCornerShape(12.dp),
@@ -857,7 +924,30 @@ private fun DrawScope.drawSunburstBackground() {
     }
 }
 
+private fun sanitizePriceInput(value: String): String {
+    val cleaned = buildString {
+        var hasDot = false
+        value.forEach { char ->
+            when {
+                char.isDigit() -> append(char)
+                char == '.' && !hasDot -> {
+                    append(char)
+                    hasDot = true
+                }
+            }
+        }
+    }
 
+    val parts = cleaned.split('.', limit = 2)
+    return if (parts.size == 2) {
+        parts[0] + "." + parts[1].take(2)
+    } else {
+        cleaned
+    }.take(10)
+}
+
+private const val DEFAULT_PRODUCT_IMAGE_URL =
+    "https://static.vecteezy.com/system/resources/thumbnails/009/314/864/small/vinyl-record-vector-illustration-isolated-on-white-background-free-png.png"
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

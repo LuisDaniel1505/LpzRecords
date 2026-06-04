@@ -21,7 +21,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ldaniel1505.lpzrecords.ui.theme.*
+import com.ldaniel1505.lpzrecords.viewmodel.admin.AdminOrderListItem
+import com.ldaniel1505.lpzrecords.viewmodel.admin.AdminOrdersViewModel
+import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -34,7 +38,8 @@ enum class OrderStatus(val displayName: String) {
     PENDIENTE("PENDIENTE"),
     ENVIADO("ENVIADO"),
     PROCESANDO("PROCESANDO"),
-    ENTREGADO("ENTREGADO")
+    ENTREGADO("ENTREGADO"),
+    CANCELADO("CANCELADO")
 }
 
 private fun OrderStatus.displayBgColor(): Color = when (this) {
@@ -42,6 +47,7 @@ private fun OrderStatus.displayBgColor(): Color = when (this) {
     OrderStatus.ENVIADO    -> Color(0xFFBBDEFB)
     OrderStatus.PROCESANDO -> Color(0xFFFFE0B2)
     OrderStatus.ENTREGADO  -> Color(0xFFC8E6C9)
+    OrderStatus.CANCELADO  -> Color(0xFFE0E0E0)
 }
 
 private fun OrderStatus.displayTextColor(): Color = when (this) {
@@ -49,31 +55,27 @@ private fun OrderStatus.displayTextColor(): Color = when (this) {
     OrderStatus.ENVIADO    -> Color(0xFF1565C0)
     OrderStatus.PROCESANDO -> Color(0xFFE65100)
     OrderStatus.ENTREGADO  -> Color(0xFF2E7D32)
+    OrderStatus.CANCELADO  -> Color(0xFF616161)
 }
 
 data class AdminOrder(
-    val id: Int,
+    val id: String,
     val date: String,          // TODO (BACKEND): Usar LocalDate y formatear con DateTimeFormatter
     val clientName: String,    // TODO (BACKEND): Vendrá del JOIN con la tabla users
     val total: Double,         // TODO (BACKEND): Calculado desde el servidor (sum de order_items)
-    val itemCount: Int,        // TODO (BACKEND): Conteo real de order_items
+    val itemCount: Long,       // TODO (BACKEND): Conteo real de order_items
     val status: OrderStatus
 )
 
 // ── Datos de ejemplo — eliminar cuando el ViewModel provea datos reales ──────
-private val sampleAdminOrders = listOf(
-    AdminOrder(1234, "20 MAYO", "Diego Careaga", 86.00, 2, OrderStatus.PENDIENTE),
-    AdminOrder(1235, "20 MAYO", "Diego Careaga", 86.00, 2, OrderStatus.ENVIADO),
-    AdminOrder(1236, "20 MAYO", "Diego Careaga", 86.00, 2, OrderStatus.ENTREGADO)
-)
-
 // ═══════════════════════════════════════════════════════════════════════════
 //  PANTALLA PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 fun OrderControlScreen(
-    onOpenDrawer: () -> Unit = {}
+    onOpenDrawer: () -> Unit = {},
+    viewModel: AdminOrdersViewModel = viewModel()
     // TODO (BACKEND): Inyectar ViewModel:
     // viewModel: OrderControlViewModel = viewModel()
 ) {
@@ -81,10 +83,17 @@ fun OrderControlScreen(
     // val uiState by viewModel.uiState.collectAsState()
     // val orders    = uiState.orders
     // val isLoading = uiState.isLoading
-    var orders by remember { mutableStateOf(sampleAdminOrders) }
+    val uiState by viewModel.uiState.collectAsState()
+    val orders = remember(uiState.orders) {
+        uiState.orders.map { it.toAdminOrder() }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchOrders()
+    }
 
     Scaffold(
-        topBar         = { AdminSectionTopBar(title = "ENVÍOS Y PEDIDOS", onOpenDrawer = onOpenDrawer) },
+        topBar         = { AdminSectionTopBar(title = "ENVIOS Y PEDIDOS", onOpenDrawer = onOpenDrawer) },
         containerColor = Color.Transparent
     ) { innerPadding ->
 
@@ -93,7 +102,20 @@ fun OrderControlScreen(
                 .fillMaxSize()
                 .drawBehind { drawSunburstBackground() }
         ) {
-            if (orders.isEmpty()) {
+            if (uiState.isLoading) {
+                AdminOrdersStateMessage(
+                    modifier = Modifier.padding(innerPadding),
+                    message = "Cargando pedidos...",
+                    showProgress = true
+                )
+            } else if (uiState.errorMessage != null && orders.isEmpty()) {
+                AdminOrdersStateMessage(
+                    modifier = Modifier.padding(innerPadding),
+                    message = uiState.errorMessage ?: "No se pudieron cargar los pedidos.",
+                    actionText = "REINTENTAR",
+                    onAction = viewModel::fetchOrders
+                )
+            } else if (orders.isEmpty()) {
                 // ── Estado vacío ───────────────────────────────────────
                 Box(
                     modifier         = Modifier
@@ -117,15 +139,26 @@ fun OrderControlScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     contentPadding      = PaddingValues(vertical = 16.dp)
                 ) {
+                    uiState.errorMessage?.let { message ->
+                        item {
+                            Text(
+                                text = message,
+                                color = LpzRed,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                        }
+                    }
+
                     items(orders, key = { it.id }) { order ->
                         AdminOrderCard(
                             order          = order,
+                            statusSelectorEnabled = uiState.updatingOrderId == null,
+                            isUpdating = uiState.updatingOrderId == order.id,
                             onStatusChange = { newStatus ->
-                                // TODO (BACKEND): viewModel.updateOrderStatus(order.id, newStatus)
                                 // En el backend, esto haría un PATCH a /orders/{id} con { status: newStatus }
-                                orders = orders.map {
-                                    if (it.id == order.id) it.copy(status = newStatus) else it
-                                }
+                                viewModel.updateOrderStatus(order.id, newStatus.displayName)
                             }
                         )
                     }
@@ -140,8 +173,89 @@ fun OrderControlScreen(
 // ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
+private fun AdminOrdersStateMessage(
+    message: String,
+    modifier: Modifier = Modifier,
+    showProgress: Boolean = false,
+    actionText: String? = null,
+    onAction: () -> Unit = {}
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(modifier),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (showProgress) {
+                CircularProgressIndicator(
+                    color = LpzRed,
+                    strokeWidth = 2.5.dp,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+
+            Text(
+                text = message,
+                fontSize = 15.sp,
+                color = LpzDark.copy(alpha = 0.55f),
+                textAlign = TextAlign.Center
+            )
+
+            actionText?.let {
+                Button(
+                    onClick = onAction,
+                    colors = ButtonDefaults.buttonColors(containerColor = LpzRed),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun AdminOrderListItem.toAdminOrder(): AdminOrder {
+    return AdminOrder(
+        id = idSale,
+        date = createdAt.toAdminDateLabel(),
+        clientName = customerName,
+        total = total,
+        itemCount = itemCount,
+        status = status.toOrderStatus()
+    )
+}
+
+private fun String.toOrderStatus(): OrderStatus {
+    return when (trim().uppercase(Locale.US)) {
+        "ENVIADO" -> OrderStatus.ENVIADO
+        "PROCESANDO" -> OrderStatus.PROCESANDO
+        "ENTREGADO", "ENTREGADA", "COMPLETADO", "COMPLETADA", "PAGADO", "PAGADA" -> OrderStatus.ENTREGADO
+        "CANCELADO", "CANCELADA", "CANCELLED" -> OrderStatus.CANCELADO
+        else -> OrderStatus.PENDIENTE
+    }
+}
+
+private fun String.toAdminDateLabel(): String {
+    return take(10).ifBlank { "SIN FECHA" }
+}
+
+private fun money(value: Double): String {
+    return "$${String.format(Locale.US, "%,.2f", value)}"
+}
+
+@Composable
 private fun AdminOrderCard(
     order: AdminOrder,
+    statusSelectorEnabled: Boolean = true,
+    isUpdating: Boolean = false,
     onStatusChange: (OrderStatus) -> Unit
 ) {
 
@@ -167,7 +281,7 @@ private fun AdminOrderCard(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text       = "ID: ${order.id}",
+                        text       = "ID: ${order.id.takeLast(8)}",
                         fontSize   = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color      = LpzDark
@@ -184,7 +298,7 @@ private fun AdminOrderCard(
                 ) {
                     Text(
                         // TODO (BACKEND): order.total vendrá calculado del servidor
-                        text       = "$${"%.2f".format(order.total)}",
+                        text       = money(order.total),
                         fontSize   = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color      = LpzDark
@@ -218,25 +332,40 @@ private fun AdminOrderCard(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text          = "ESTADO DEL PEDIDO",
-                    fontSize      = 10.sp,
-                    fontWeight    = FontWeight.Bold,
-                    color         = LpzDark.copy(alpha = 0.45f),
-                    letterSpacing = 0.8.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text          = "ESTADO DEL PEDIDO",
+                        fontSize      = 10.sp,
+                        fontWeight    = FontWeight.Bold,
+                        color         = LpzDark.copy(alpha = 0.45f),
+                        letterSpacing = 0.8.sp
+                    )
 
-                if (!isExpanded) {
+                    if (isUpdating) {
+                        CircularProgressIndicator(
+                            color = LpzRed,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                if (!isExpanded || !statusSelectorEnabled) {
                     OrderStatusChip(
                         status          = order.status,
                         inSelectorMode  = false,
                         modifier        = Modifier.fillMaxWidth(),
+                        enabled         = statusSelectorEnabled && !isUpdating,
                         onClick         = { isExpanded = true }
                     )
                 }
 
                 AnimatedVisibility(
-                    visible = isExpanded,
+                    visible = isExpanded && statusSelectorEnabled && !isUpdating,
                     enter   = expandVertically(),
                     exit    = shrinkVertically()
                 ) {
@@ -248,8 +377,9 @@ private fun AdminOrderCard(
                                 isCurrentSelection  = status == order.status,
                                 modifier            = Modifier.fillMaxWidth(),
                                 onClick             = {
-                                    // TODO (BACKEND): viewModel.updateOrderStatus(order.id, status)
-                                    onStatusChange(status)
+                                    if (status != order.status) {
+                                        onStatusChange(status)
+                                    }
                                     isExpanded = false
                                 }
                             )
@@ -268,6 +398,7 @@ private fun OrderStatusChip(
     inSelectorMode: Boolean,
     modifier: Modifier = Modifier,
     isCurrentSelection: Boolean = false,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val bgColor   = if (inSelectorMode) Color(0xFFFFCDD2) else status.displayBgColor()
@@ -279,6 +410,7 @@ private fun OrderStatusChip(
 
     Surface(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier,
         shape  = RoundedCornerShape(10.dp),
         color  = bgColor,

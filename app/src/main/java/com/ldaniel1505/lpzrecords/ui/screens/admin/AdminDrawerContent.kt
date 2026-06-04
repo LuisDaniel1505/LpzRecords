@@ -235,7 +235,14 @@ fun AdminHostScreen(
     ) {
         // ── Contenido según la sección activa ──────────────────────────
         when (selectedSection) {
-            AdminSection.RESUMEN   -> AdminDashboardScreen()
+            AdminSection.RESUMEN   -> AdminDashboardScreen(
+                onOpenDrawer = {
+                    scope.launch { drawerState.open() }
+                },
+                onNavigateToAllOrders = {
+                    selectedSection = AdminSection.ENVIOS
+                }
+            )
             
             AdminSection.PRODUCTOS -> ProductControlScreen(
                 onNavigateBack = {
