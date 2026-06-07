@@ -16,12 +16,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -56,6 +58,7 @@ fun SearchScreen(
     onNavigateToCart: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToAccount: () -> Unit = {},
     onNavigateToProduct: (String) -> Unit = {}
 ) {
     val viewModel: ProductViewModel = viewModel()
@@ -68,7 +71,7 @@ fun SearchScreen(
     val products = viewModel.filteredProducts
 
     Scaffold(
-        topBar = { SearchTopBar() },
+        topBar = { SearchTopBar(onNavigateToAccount = onNavigateToAccount) },
         bottomBar = {
             LpzBottomNavBar(
                 selectedTab = BottomNavTab.SEARCH,
@@ -121,7 +124,7 @@ fun SearchScreen(
 
                 query.isBlank() -> {
                     EmptySearchMessage(
-                        title = "Busca por disco, artista o categoria"
+                        title = "Busca por disco, artista o categoría"
                     )
                 }
 
@@ -161,7 +164,7 @@ private fun SearchInput(
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
-        placeholder = { Text("Buscar discos, artistas o categorias", color = Color.Gray, fontSize = 14.sp) },
+        placeholder = { Text("Buscar discos, artistas o categorías", color = Color.Gray, fontSize = 14.sp) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
@@ -228,7 +231,7 @@ private fun SearchResultCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.category?.name ?: "Sin categoria",
+                    text = product.category?.name ?: "Sin categoría",
                     fontSize = 12.sp,
                     color = LpzDark.copy(alpha = 0.50f),
                     maxLines = 1,
@@ -272,7 +275,7 @@ private fun EmptySearchMessage(title: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchTopBar() {
+private fun SearchTopBar(onNavigateToAccount: () -> Unit) {
     TopAppBar(
         title = {
             Box(
@@ -280,10 +283,19 @@ private fun SearchTopBar() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "BUSQUEDA",
+                    text = "BÚSQUEDA",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzDark
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onNavigateToAccount) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Cuenta",
+                    tint = LpzDark
                 )
             }
         },

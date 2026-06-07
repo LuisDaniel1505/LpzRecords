@@ -152,7 +152,7 @@ private fun EmptyFavoritesState(modifier: Modifier = Modifier) {
                 modifier = Modifier.size(56.dp)
             )
             Text(
-                text = "Aun no tienes favoritos",
+                text = "Aún no tienes favoritos",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = LpzDark.copy(alpha = 0.55f)

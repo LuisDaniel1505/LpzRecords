@@ -74,10 +74,10 @@ fun AddressFormScreen(
     }
 
     val validationMessage = when {
-        street.isBlank() -> "Ingresa la calle y numero."
+        street.isBlank() -> "Ingresa la calle y número."
         city.isBlank() -> "Ingresa la ciudad."
         state.isBlank() -> "Ingresa el estado."
-        !InputValidators.isValidPostalCode(postalCode) -> "El codigo postal debe tener exactamente 5 digitos."
+        !InputValidators.isValidPostalCode(postalCode) -> "El código postal debe tener exactamente 5 dígitos."
         else -> null
     }
     val canSave = validationMessage == null && !uiState.isLoading
@@ -103,7 +103,7 @@ fun AddressFormScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             FormTextField(
-                label = "Calle y numero",
+                label = "Calle y número",
                 value = street,
                 onValueChange = {
                     street = it.take(InputValidators.STREET_MAX_LENGTH)

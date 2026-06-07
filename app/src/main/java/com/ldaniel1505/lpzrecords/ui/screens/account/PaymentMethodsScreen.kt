@@ -90,7 +90,7 @@ fun PaymentMethodsScreen(
             },
             text = {
                 Text(
-                    text = "Deseas eliminar la tarjeta terminada en ${pendingCard.lastFourDigits}?",
+                    text = "¿Deseas eliminar la tarjeta terminada en ${pendingCard.lastFourDigits}?",
                     color = LpzDark.copy(alpha = 0.75f),
                     fontSize = 14.sp
                 )
@@ -115,7 +115,7 @@ fun PaymentMethodsScreen(
         topBar = { PaymentMethodsTopBar(onNavigateBack = onNavigateToProfile) },
         bottomBar = {
             LpzBottomNavBar(
-                selectedTab = BottomNavTab.PROFILE,
+                selectedTab = null,
                 onHome = onNavigateToHome,
                 onSearch = onNavigateToSearch,
                 onCart = onNavigateToCart,
@@ -247,7 +247,7 @@ private fun CreditCardVisual(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = if (isSelected) "SELECCIONADA" else "METODO",
+                        text = if (isSelected) "Seleccionada" else "Método",
                         fontSize = 9.sp,
                         color = Color.White.copy(alpha = 0.55f),
                         letterSpacing = 1.sp,
@@ -315,7 +315,7 @@ private fun AddCardButton(onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "+ ANADIR TARJETA",
+            text = "+ Añadir tarjeta",
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             color = LpzDark.copy(alpha = 0.58f),

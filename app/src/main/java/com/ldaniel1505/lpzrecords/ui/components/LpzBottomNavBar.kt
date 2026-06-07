@@ -4,10 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.HorizontalDivider
@@ -32,7 +32,7 @@ enum class BottomNavTab {
     SEARCH,
     CART,
     FAVORITES,
-    PROFILE
+    ORDERS
 }
 
 @Composable
@@ -97,9 +97,9 @@ fun LpzBottomNavBar(
                     onClick    = onFavorites
                 )
                 LpzNavItem(
-                    icon       = Icons.Default.Person,
-                    label      = "Perfil",
-                    isSelected = selectedTab == BottomNavTab.PROFILE,
+                    icon       = Icons.AutoMirrored.Filled.List,
+                    label      = "Compras",
+                    isSelected = selectedTab == BottomNavTab.ORDERS,
                     onClick    = onProfile
                 )
             }

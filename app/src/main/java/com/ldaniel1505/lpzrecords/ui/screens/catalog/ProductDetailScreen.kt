@@ -214,12 +214,12 @@ private fun ProductDetailContent(
             )
 
             ProductMetaRow(
-                category = product.category?.name ?: "Sin categoria",
+                category = product.category?.name ?: "Sin categoría",
                 stock = product.stock
             )
 
             Text(
-                text = product.description.orEmpty().ifBlank { "Sin descripcion disponible." },
+                text = product.description.orEmpty().ifBlank { "Sin descripción disponible." },
                 fontSize = 14.sp,
                 color = LpzDark.copy(alpha = 0.68f),
                 lineHeight = 20.sp

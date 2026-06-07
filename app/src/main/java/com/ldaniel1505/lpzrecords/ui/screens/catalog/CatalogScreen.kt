@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
@@ -73,6 +74,7 @@ fun CatalogScreen(
     onNavigateToCart: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToAccount: () -> Unit = {},
     onNavigateToProduct: (String) -> Unit = {},
     favoriteProductIds: Set<String> = emptySet(),
     onAddToCart: (Product) -> Unit = {},
@@ -93,7 +95,7 @@ fun CatalogScreen(
     val categoryOptions = viewModel.categoryOptions
 
     Scaffold(
-        topBar = { CatalogTopBar() },
+        topBar = { CatalogTopBar(onNavigateToAccount = onNavigateToAccount) },
         bottomBar = {
             LpzBottomNavBar(
                 selectedTab = null,
@@ -209,7 +211,7 @@ fun CatalogScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CatalogTopBar() {
+private fun CatalogTopBar(onNavigateToAccount: () -> Unit) {
     TopAppBar(
         title = {
             Box(
@@ -225,6 +227,13 @@ private fun CatalogTopBar() {
             }
         },
         actions = {
+            IconButton(onClick = onNavigateToAccount) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Cuenta",
+                    tint = LpzDark
+                )
+            }
             Icon(
                 painter = painterResource(id = R.drawable.vinyl),
                 contentDescription = "Logo LPZ Records",
@@ -369,7 +378,7 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = product.category?.name ?: "Sin categoria",
+                    text = product.category?.name ?: "Sin categoría",
                     fontSize = 11.sp,
                     color = LpzDark.copy(alpha = 0.55f),
                     maxLines = 1,

@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,23 +48,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ldaniel1505.lpzrecords.ui.components.BottomNavTab
 import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
-import com.ldaniel1505.lpzrecords.viewmodel.orders.OrdersViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
 
 @Composable
 fun AccountScreen(
     profileViewModel: ProfileViewModel = viewModel(),
-    ordersViewModel: OrdersViewModel = viewModel(),
     onNavigateToHome: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
     onNavigateToCart: () -> Unit = {},
     onNavigateToFavorites: () -> Unit = {},
-    onNavigateToOrders: () -> Unit = {},
     onNavigateToPersonalInfo: () -> Unit = {},
     onNavigateToAddresses: () -> Unit = {},
     onNavigateToPaymentMethods: () -> Unit = {},
@@ -76,7 +71,6 @@ fun AccountScreen(
 
     LaunchedEffect(Unit) {
         profileViewModel.loadProfile()
-        ordersViewModel.fetchOrders()
     }
 
     LaunchedEffect(profileState.logoutSuccess) {
@@ -88,13 +82,11 @@ fun AccountScreen(
 
     val userName = profileState.displayName
     val userInitial = profileState.initials
-    val purchaseCount = ordersViewModel.orders.size
-
     Scaffold(
         topBar = { AccountTopBar() },
         bottomBar = {
             LpzBottomNavBar(
-                selectedTab = BottomNavTab.PROFILE,
+                selectedTab = null,
                 onHome = onNavigateToHome,
                 onSearch = onNavigateToSearch,
                 onCart = onNavigateToCart,
@@ -149,71 +141,7 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            SectionHeader(title = "MI ACTIVIDAD")
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Card(
-                onClick = onNavigateToOrders,
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(LpzRed),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Text(
-                            text = "Mis compras",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = LpzDark
-                        )
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = "$purchaseCount",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = LpzDark.copy(alpha = 0.55f)
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Ver mis compras",
-                            tint = LpzDark.copy(alpha = 0.45f),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            SectionHeader(title = "CONFIGURACION")
+            SectionHeader(title = "Configuración")
             Spacer(modifier = Modifier.height(10.dp))
 
             Card(
@@ -224,13 +152,13 @@ fun AccountScreen(
             ) {
                 Column {
                     ConfigRow(
-                        title = "Informacion personal",
-                        subtitle = "Nombre, correo, telefono",
+                        title = "Información personal",
+                        subtitle = "Nombre, correo, teléfono",
                         onClick = onNavigateToPersonalInfo
                     )
                     RowDivider()
                     ConfigRow(
-                        title = "Direcciones de envio",
+                        title = "Direcciones de envío",
                         subtitle = "Selecciona puntos de entrega",
                         onClick = onNavigateToAddresses
                     )
@@ -243,7 +171,7 @@ fun AccountScreen(
                     RowDivider()
                     ConfigRowWithSwitch(
                         title = "Notificaciones",
-                        subtitle = "Avisos de ofertas y envios",
+                        subtitle = "Avisos de ofertas y envíos",
                         checked = notificationsEnabled,
                         onCheckedChange = { notificationsEnabled = it }
                     )
@@ -263,7 +191,7 @@ fun AccountScreen(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = LpzRed)
             ) {
                 Text(
-                    text = if (profileState.isLoading) "CERRANDO..." else "CERRAR SESION",
+                    text = if (profileState.isLoading) "Cerrando..." else "Cerrar sesión",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp

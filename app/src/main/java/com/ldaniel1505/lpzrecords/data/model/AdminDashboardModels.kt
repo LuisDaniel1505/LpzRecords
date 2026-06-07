@@ -12,6 +12,8 @@ data class AdminSaleRow(
     val total: Double = 0.0,
     @SerialName("state")
     val status: String = "",
+    @SerialName("cancellation_reason")
+    val cancellationReason: String? = null,
     @SerialName("created_at")
     val createdAt: String = ""
 )
@@ -27,6 +29,8 @@ data class AdminRecentOrderRpcRow(
     val total: Double = 0.0,
     @SerialName("state")
     val status: String = "",
+    @SerialName("cancellation_reason")
+    val cancellationReason: String? = null,
     @SerialName("created_at")
     val createdAt: String = "",
     @SerialName("item_count")
@@ -51,6 +55,7 @@ data class AdminRecentOrder(
     val customerName: String,
     val total: Double,
     val status: String,
+    val cancellationReason: String? = null,
     val createdAt: String,
     val itemCount: Long = 0
 )

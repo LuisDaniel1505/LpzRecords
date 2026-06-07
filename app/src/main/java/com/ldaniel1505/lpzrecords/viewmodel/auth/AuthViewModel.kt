@@ -72,7 +72,7 @@ class AuthViewModel : ViewModel() {
                     signUpSuccess = true
                 } else {
                     signUpRequiresEmailConfirmation = true
-                    errorMessage = "Cuenta creada. Revisa tu correo para confirmar el registro e inicia sesion."
+                    errorMessage = "Cuenta creada. Revisa tu correo para confirmar el registro e inicia sesión."
                 }
             } catch (e: Exception) {
                 errorMessage = friendlyAuthError(e, isSignUp = true)
@@ -139,7 +139,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // Funcion para limpiar el estado al cerrar sesion o cambiar de pantalla
+    // Función para limpiar el estado al cerrar sesión o cambiar de pantalla
     fun resetAuthState() {
         loginSuccessByRole = null
         signUpSuccess = false
@@ -158,12 +158,12 @@ class AuthViewModel : ViewModel() {
                     message.contains("invalid credentials", ignoreCase = true) ->
                 "Correo o contrasena incorrectos."
             message.contains("email not confirmed", ignoreCase = true) ->
-                "Confirma tu correo antes de iniciar sesion."
+                "Confirma tu correo antes de iniciar sesión."
             message.contains("network", ignoreCase = true) ||
                     message.contains("timeout", ignoreCase = true) ->
                 "No se pudo conectar con el servidor. Revisa tu conexion."
             isSignUp -> "No se pudo crear la cuenta. Intenta de nuevo."
-            else -> "No se pudo iniciar sesion. Intenta de nuevo."
+            else -> "No se pudo iniciar sesión. Intenta de nuevo."
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ldaniel1505.lpzrecords.data.model.CreatePaymentMethod
 import com.ldaniel1505.lpzrecords.data.model.PaymentMethod
+import com.ldaniel1505.lpzrecords.data.model.cvvToken
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
 import com.ldaniel1505.lpzrecords.util.InputValidators
 import io.github.jan.supabase.gotrue.auth
@@ -69,15 +70,41 @@ class PaymentMethodsViewModel : ViewModel() {
         }
     }
 
-    fun createPaymentMethod(cardNumber: String) {
+    fun createPaymentMethod(
+        cardNumber: String,
+        cvv: String,
+        expiryDate: String,
+        cardHolder: String,
+        postalCode: String
+    ) {
         val cleanNumber = cardNumber.filter { it.isDigit() }
+        val cleanCvv = cvv.trim()
+        val cleanExpiryDate = expiryDate.trim()
+        val cleanCardHolder = cardHolder.trim()
+        val cleanPostalCode = postalCode.trim()
 
         if (cleanNumber.length != InputValidators.CARD_NUMBER_LENGTH) {
-            _uiState.update { it.copy(errorMessage = "La tarjeta debe tener exactamente 16 numeros.") }
+            _uiState.update { it.copy(errorMessage = "La tarjeta debe tener exactamente 16 números.") }
             return
         }
         if (!InputValidators.isValidSupportedCard(cleanNumber)) {
-            _uiState.update { it.copy(errorMessage = "El numero de tarjeta no es valido.") }
+            _uiState.update { it.copy(errorMessage = "El número de tarjeta no es válido.") }
+            return
+        }
+        if (!InputValidators.isValidCardCvv(cleanCvv)) {
+            _uiState.update { it.copy(errorMessage = "El CVV debe tener exactamente 3 dígitos.") }
+            return
+        }
+        if (!InputValidators.isValidCardExpiry(cleanExpiryDate)) {
+            _uiState.update { it.copy(errorMessage = "Ingresa una fecha de vencimiento válida en formato MM/AA.") }
+            return
+        }
+        if (!InputValidators.isValidCardHolder(cleanCardHolder)) {
+            _uiState.update { it.copy(errorMessage = "Ingresa el nombre del titular de la tarjeta.") }
+            return
+        }
+        if (!InputValidators.isValidPostalCode(cleanPostalCode)) {
+            _uiState.update { it.copy(errorMessage = "El código postal debe tener exactamente 5 dígitos.") }
             return
         }
 
@@ -88,17 +115,19 @@ class PaymentMethodsViewModel : ViewModel() {
                 val uid = currentUserIdOrThrow()
                 val shouldBeDefault = _uiState.value.paymentMethods.isEmpty()
                 val provider = InputValidators.cardBrand(cleanNumber) ?: "TARJETA"
+                val paymentMethodId = UUID.randomUUID().toString()
 
                 withContext(Dispatchers.IO) {
                     SupabaseClient.client
                         .from("payment_methods")
                         .insert(
                             CreatePaymentMethod(
-                                idMethod = UUID.randomUUID().toString(),
+                                idMethod = paymentMethodId,
                                 userId = uid,
                                 type = "card",
                                 last4 = cleanNumber.takeLast(4),
                                 brand = provider,
+                                paymentToken = cvvToken(paymentMethodId, cleanCvv),
                                 isDefault = shouldBeDefault
                             )
                         )

@@ -10,7 +10,8 @@ data class OrderItem(
     val artistName: String,
     val quantity: Int,
     val selectedFormat: String,
-    val unitPrice: Double
+    val unitPrice: Double,
+    val imageUrl: String? = null
 ) {
     val totalPrice: Double
         get() = unitPrice * quantity
@@ -29,6 +30,8 @@ data class Order(
     val status: String = "PENDIENTE",
     @SerialName("payment_method")
     val paymentMethod: String? = null,
+    @SerialName("cancellation_reason")
+    val cancellationReason: String? = null,
     @SerialName("created_at")
     val createdAt: String = "",
     val items: List<OrderItem> = emptyList()

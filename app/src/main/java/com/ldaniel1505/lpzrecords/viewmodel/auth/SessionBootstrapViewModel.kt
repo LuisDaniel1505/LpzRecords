@@ -48,7 +48,7 @@ class SessionBootstrapViewModel : ViewModel() {
                     SessionStatus.NetworkError -> {
                         _uiState.value = SessionBootstrapUiState(
                             isLoading = false,
-                            errorMessage = "No se pudo restaurar la sesion. Revisa tu conexion."
+                            errorMessage = "No se pudo restaurar la sesión. Revisa tu conexión."
                         )
                     }
                 }
@@ -103,7 +103,7 @@ class SessionBootstrapViewModel : ViewModel() {
         } catch (_: Exception) {
             _uiState.value = SessionBootstrapUiState(
                 isLoading = false,
-                errorMessage = "No se pudo cargar el perfil de la sesion guardada."
+                errorMessage = "No se pudo cargar el perfil de la sesión guardada."
             )
         }
     }

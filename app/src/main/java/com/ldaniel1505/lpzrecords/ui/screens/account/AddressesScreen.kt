@@ -83,14 +83,14 @@ fun AddressesScreen(
             containerColor = Color.White,
             title = {
                 Text(
-                    text = "Eliminar direccion",
+                    text = "Eliminar dirección",
                     fontWeight = FontWeight.Bold,
                     color = LpzDark
                 )
             },
             text = {
                 Text(
-                    text = "Deseas eliminar la direccion \"${pendingAddress.summary}\"?",
+                    text = "¿Deseas eliminar la dirección \"${pendingAddress.summary}\"?",
                     color = LpzDark.copy(alpha = 0.75f),
                     fontSize = 14.sp
                 )
@@ -115,7 +115,7 @@ fun AddressesScreen(
         topBar = { AddressesTopBar(onNavigateBack = onNavigateToProfile) },
         bottomBar = {
             LpzBottomNavBar(
-                selectedTab = BottomNavTab.PROFILE,
+                selectedTab = null,
                 onHome = onNavigateToHome,
                 onSearch = onNavigateToSearch,
                 onCart = onNavigateToCart,
@@ -308,7 +308,7 @@ private fun AddAddressButton(onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "+ ANADIR DIRECCION",
+            text = "+ Añadir dirección",
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             color = LpzDark.copy(alpha = 0.60f),

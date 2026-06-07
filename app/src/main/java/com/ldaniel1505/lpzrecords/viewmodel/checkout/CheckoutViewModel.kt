@@ -8,12 +8,14 @@ import com.ldaniel1505.lpzrecords.data.model.Order
 import com.ldaniel1505.lpzrecords.data.model.OrderItem
 import com.ldaniel1505.lpzrecords.data.model.PaymentMethod
 import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +28,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.util.UUID
 
 data class CheckoutUiState(
     val items: List<CartItem> = emptyList(),
@@ -99,12 +100,16 @@ class CheckoutViewModel : ViewModel() {
         }
     }
 
-    fun confirmarCompra() {
+    fun confirmarCompra(cvv: String) {
         val currentState = _uiState.value
         if (currentState.isSubmitting) return
 
+        if (!InputValidators.isValidCardCvv(cvv)) {
+            _uiState.update { it.copy(errorMessage = "Ingresa un CVV válido de 3 dígitos.") }
+            return
+        }
         if (currentState.items.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "Tu carrito esta vacio.") }
+            _uiState.update { it.copy(errorMessage = "Tu carrito está vacío.") }
             return
         }
         val itemWithoutStock = currentState.items.firstOrNull { it.quantity > it.product.stock }
@@ -117,11 +122,22 @@ class CheckoutViewModel : ViewModel() {
             return
         }
         if (currentState.selectedAddress.idAddress.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Agrega una direccion de envio antes de confirmar.") }
+            _uiState.update { it.copy(errorMessage = "Agrega una dirección de envío antes de confirmar.") }
             return
         }
         if (currentState.selectedPaymentMethod.idMethod.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Agrega un metodo de pago antes de confirmar.") }
+            _uiState.update { it.copy(errorMessage = "Agrega un método de pago antes de confirmar.") }
+            return
+        }
+
+        if (!currentState.selectedPaymentMethod.canValidateCvv) {
+            _uiState.update {
+                it.copy(errorMessage = "Vuelve a guardar esta tarjeta para poder validar su CVV.")
+            }
+            return
+        }
+        if (!currentState.selectedPaymentMethod.matchesCvv(cvv)) {
+            _uiState.update { it.copy(errorMessage = "El CVV no coincide con la tarjeta seleccionada.") }
             return
         }
 
@@ -149,7 +165,8 @@ class CheckoutViewModel : ViewModel() {
                         artistName = item.product.artist?.name ?: "Artista desconocido",
                         quantity = item.quantity,
                         selectedFormat = item.selectedFormat,
-                        unitPrice = item.product.price
+                        unitPrice = item.product.price,
+                        imageUrl = item.product.img_url
                     )
                 }
 
@@ -224,7 +241,7 @@ class CheckoutViewModel : ViewModel() {
 private const val SHIPPING_COST = 5.0
 
 private val defaultAddress = Address(
-    street = "Direccion pendiente",
+    street = "Dirección pendiente",
     city = "La Paz",
     stateAddress = "BCS",
     postalCode = "23000",

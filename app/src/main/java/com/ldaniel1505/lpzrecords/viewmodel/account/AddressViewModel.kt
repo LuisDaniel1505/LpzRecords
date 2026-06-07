@@ -86,11 +86,11 @@ class AddressViewModel : ViewModel() {
             cleanState.isBlank() ||
             cleanPostalCode.isBlank()
         ) {
-            _uiState.update { it.copy(errorMessage = "Completa todos los campos de direccion.") }
+            _uiState.update { it.copy(errorMessage = "Completa todos los campos de dirección.") }
             return
         }
         if (cleanStreet.length > InputValidators.STREET_MAX_LENGTH) {
-            _uiState.update { it.copy(errorMessage = "La calle y numero no pueden exceder 150 caracteres.") }
+            _uiState.update { it.copy(errorMessage = "La calle y número no pueden exceder 150 caracteres.") }
             return
         }
         if (cleanCity.length > InputValidators.CITY_MAX_LENGTH) {
@@ -102,7 +102,7 @@ class AddressViewModel : ViewModel() {
             return
         }
         if (!InputValidators.isValidPostalCode(cleanPostalCode)) {
-            _uiState.update { it.copy(errorMessage = "El codigo postal debe tener exactamente 5 digitos.") }
+            _uiState.update { it.copy(errorMessage = "El código postal debe tener exactamente 5 dígitos.") }
             return
         }
 
@@ -135,7 +135,7 @@ class AddressViewModel : ViewModel() {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No se pudo guardar la direccion. Revisa los datos e intenta de nuevo."
+                        errorMessage = "No se pudo guardar la dirección. Revisa los datos e intenta de nuevo."
                     )
                 }
             }
@@ -167,7 +167,7 @@ class AddressViewModel : ViewModel() {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No se pudo eliminar la direccion. Intenta de nuevo."
+                        errorMessage = "No se pudo eliminar la dirección. Intenta de nuevo."
                     )
                 }
             }

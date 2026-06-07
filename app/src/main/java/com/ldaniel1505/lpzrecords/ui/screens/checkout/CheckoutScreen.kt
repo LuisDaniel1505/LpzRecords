@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,6 +47,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,6 +60,7 @@ import com.ldaniel1505.lpzrecords.ui.components.LpzBottomNavBar
 import com.ldaniel1505.lpzrecords.ui.theme.LpzBeige
 import com.ldaniel1505.lpzrecords.ui.theme.LpzDark
 import com.ldaniel1505.lpzrecords.ui.theme.LpzRed
+import com.ldaniel1505.lpzrecords.util.InputValidators
 import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
@@ -99,12 +104,12 @@ fun CheckoutScreen(
     }
 
     if (showConfirmDialog) {
-        ConfirmOrderDialog(
+        ConfirmOrderWithCvvDialog(
             total = uiState.total,
             isSubmitting = uiState.isSubmitting,
-            onConfirm = {
+            onConfirm = { cvv ->
                 showConfirmDialog = false
-                checkoutViewModel.confirmarCompra()
+                checkoutViewModel.confirmarCompra(cvv)
             },
             onDismiss = { showConfirmDialog = false }
         )
@@ -172,7 +177,7 @@ fun CheckoutScreen(
                         }
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Cambiar direccion",
+                            contentDescription = "Cambiar dirección",
                             tint = LpzDark.copy(alpha = 0.40f)
                         )
                     }
@@ -202,7 +207,7 @@ fun CheckoutScreen(
                         )
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Cambiar metodo de pago",
+                            contentDescription = "Cambiar método de pago",
                             tint = LpzDark.copy(alpha = 0.40f)
                         )
                     }
@@ -242,7 +247,7 @@ fun CheckoutScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = if (uiState.isSubmitting) "PROCESANDO" else "CONFIRMAR ORDEN",
+                        text = if (uiState.isSubmitting) "Procesando..." else "Confirmar orden",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -332,7 +337,7 @@ private fun OrderSummaryCard(
             )
 
             SummaryRow(
-                label = "Envio",
+                label = "Envío",
                 value = money(shippingCost),
                 isHighlighted = false
             )
@@ -409,6 +414,83 @@ private fun SummaryRow(
 }
 
 @Composable
+private fun ConfirmOrderWithCvvDialog(
+    total: Double,
+    isSubmitting: Boolean,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var cvv by remember { mutableStateOf("") }
+    var cvvError by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Text(
+                text = "Confirmar pedido",
+                fontWeight = FontWeight.Bold,
+                color = LpzDark
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "¿Deseas confirmar esta orden por ${money(total)}?",
+                    color = LpzDark.copy(alpha = 0.75f),
+                    fontSize = 14.sp
+                )
+                OutlinedTextField(
+                    value = cvv,
+                    onValueChange = { value ->
+                        cvv = InputValidators.digitsOnly(value, InputValidators.CARD_CVV_LENGTH)
+                        cvvError = null
+                    },
+                    label = { Text("CVV") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    isError = cvvError != null,
+                    supportingText = cvvError?.let { message ->
+                        { Text(text = message, color = LpzRed) }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isSubmitting,
+                onClick = {
+                    if (InputValidators.isValidCardCvv(cvv)) {
+                        onConfirm(cvv)
+                    } else {
+                        cvvError = "Ingresa un CVV válido de 3 dígitos."
+                    }
+                }
+            ) {
+                Text(
+                    text = "Confirmar",
+                    color = LpzRed,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                enabled = !isSubmitting,
+                onClick = onDismiss
+            ) {
+                Text(
+                    text = "Cancelar",
+                    color = LpzDark.copy(alpha = 0.6f)
+                )
+            }
+        }
+    )
+}
+
+@Composable
 private fun ConfirmOrderDialog(
     total: Double,
     isSubmitting: Boolean,
@@ -427,7 +509,7 @@ private fun ConfirmOrderDialog(
         },
         text = {
             Text(
-                text = "Deseas confirmar esta orden por ${money(total)}?",
+                text = "¿Deseas confirmar esta orden por ${money(total)}?",
                 color = LpzDark.copy(alpha = 0.75f),
                 fontSize = 14.sp
             )

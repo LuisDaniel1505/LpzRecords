@@ -142,27 +142,27 @@ class AdminDashboardViewModel : ViewModel() {
 
     private suspend fun loadSalesSafely(): List<AdminSaleRow> {
         return runCatching {
-            SupabaseClient.client
-                .from("sales")
-                .select(columns = Columns.raw("id_sale,id_user,total,state,created_at"))
-                .decodeList<AdminSaleRow>()
-        }.getOrDefault(emptyList())
+            loadSales(Columns.raw("id_sale,id_user,total,state,cancellation_reason,created_at"))
+        }.getOrElse {
+            runCatching {
+                loadSales(Columns.raw("id_sale,id_user,total,state,created_at"))
+            }.getOrDefault(emptyList())
+        }
+    }
+
+    private suspend fun loadSales(columns: Columns): List<AdminSaleRow> {
+        return SupabaseClient.client
+            .from("sales")
+            .select(columns = columns)
+            .decodeList<AdminSaleRow>()
     }
 
     private suspend fun loadRecentOrders(
         usersById: Map<String, AdminUserRow>,
         fallbackSales: List<AdminSaleRow>
     ): List<AdminRecentOrder> {
-        val rpcOrders = runCatching {
-            SupabaseClient.client.postgrest
-                .rpc(
-                    function = "get_admin_recent_orders",
-                    parameters = buildJsonObject {
-                        put("limit_count", 5)
-                    }
-                )
-                .decodeList<AdminRecentOrderRpcRow>()
-        }.getOrDefault(emptyList())
+        val rpcOrders = loadRecentOrdersRpc("get_admin_recent_orders_v2")
+            .ifEmpty { loadRecentOrdersRpc("get_admin_recent_orders") }
 
         if (rpcOrders.isNotEmpty()) {
             return rpcOrders.map { it.toAdminRecentOrder() }
@@ -177,9 +177,23 @@ class AdminDashboardViewModel : ViewModel() {
                     customerName = usersById[sale.userId]?.name ?: "Cliente",
                     total = sale.total,
                     status = sale.status,
+                    cancellationReason = sale.cancellationReason,
                     createdAt = sale.createdAt
                 )
             }
+    }
+
+    private suspend fun loadRecentOrdersRpc(functionName: String): List<AdminRecentOrderRpcRow> {
+        return runCatching {
+            SupabaseClient.client.postgrest
+                .rpc(
+                    function = functionName,
+                    parameters = buildJsonObject {
+                        put("limit_count", 5)
+                    }
+                )
+                .decodeList<AdminRecentOrderRpcRow>()
+        }.getOrDefault(emptyList())
     }
 
     private fun updateUserChart(dailyCounts: List<Int>) {
@@ -285,6 +299,7 @@ private fun AdminRecentOrderRpcRow.toAdminRecentOrder(): AdminRecentOrder {
         customerName = customerName?.takeIf { it.isNotBlank() } ?: "Cliente",
         total = total,
         status = status,
+        cancellationReason = cancellationReason,
         createdAt = createdAt,
         itemCount = itemCount
     )

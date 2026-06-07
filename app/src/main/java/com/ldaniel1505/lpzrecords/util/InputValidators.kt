@@ -2,6 +2,7 @@ package com.ldaniel1505.lpzrecords.util
 
 import java.math.BigDecimal
 import java.net.URI
+import java.util.Calendar
 
 object InputValidators {
     const val NAME_MIN_LENGTH = 2
@@ -11,6 +12,8 @@ object InputValidators {
     const val PHONE_LENGTH = 10
     const val POSTAL_CODE_LENGTH = 5
     const val CARD_NUMBER_LENGTH = 16
+    const val CARD_CVV_LENGTH = 3
+    const val CARD_HOLDER_MAX_LENGTH = 80
     const val STREET_MAX_LENGTH = 150
     const val CITY_MAX_LENGTH = 80
     const val STATE_MAX_LENGTH = 80
@@ -53,6 +56,34 @@ object InputValidators {
         return digits.length == CARD_NUMBER_LENGTH &&
                 cardBrand(digits) != null &&
                 passesLuhn(digits)
+    }
+
+    fun isValidCardCvv(value: String): Boolean {
+        val clean = value.trim()
+        return clean.length == CARD_CVV_LENGTH && clean.all(Char::isDigit)
+    }
+
+    fun isValidCardExpiry(value: String): Boolean {
+        val clean = value.trim()
+        val parts = clean.split("/")
+        if (parts.size != 2) return false
+
+        val month = parts[0].toIntOrNull() ?: return false
+        val yearSuffix = parts[1].toIntOrNull() ?: return false
+        if (parts[0].length != 2 || parts[1].length != 2 || month !in 1..12) return false
+
+        val current = Calendar.getInstance()
+        val currentYear = current.get(Calendar.YEAR) % 100
+        val currentMonth = current.get(Calendar.MONTH) + 1
+
+        return yearSuffix > currentYear || (yearSuffix == currentYear && month >= currentMonth)
+    }
+
+    fun isValidCardHolder(value: String): Boolean {
+        val clean = value.trim()
+        return clean.length in NAME_MIN_LENGTH..CARD_HOLDER_MAX_LENGTH &&
+                clean.any(Char::isLetter) &&
+                clean.all { it.isLetter() || it.isWhitespace() || it == '.' || it == '\'' || it == '-' }
     }
 
     fun cardBrand(value: String): String? {

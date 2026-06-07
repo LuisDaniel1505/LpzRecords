@@ -144,7 +144,7 @@ class ProductControlViewModel : ViewModel() {
                         }
                 }
                 _products.value = loadProducts()
-                successMessage = "Producto ocultado del catalogo."
+                successMessage = "Producto ocultado del catálogo."
 
             } catch (e: Exception) {
                 errorMessage = friendlyError("Error al ocultar producto", e)
@@ -177,7 +177,7 @@ class ProductControlViewModel : ViewModel() {
             product.title.trim().length > InputValidators.PRODUCT_TITLE_MAX_LENGTH ->
                 "El nombre del producto no puede exceder 150 caracteres."
             product.description.orEmpty().length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH ->
-                "La descripcion no puede exceder 1000 caracteres."
+                "La descripción no puede exceder 1000 caracteres."
             product.price <= 0.0 -> "El precio debe ser mayor a 0."
             !InputValidators.hasAtMostTwoDecimals(product.price) -> "El precio solo puede tener dos decimales."
             product.unitCost <= 0.0 -> "El costo debe ser mayor a 0."
@@ -186,7 +186,7 @@ class ProductControlViewModel : ViewModel() {
             product.stock > InputValidators.STOCK_MAX -> "El stock no puede exceder 99999 unidades."
             !InputValidators.isValidHttpUrl(product.img_url.orEmpty()) ->
                 "La URL de la imagen debe comenzar con http:// o https://."
-            product.fkCategory == null || product.fkCategory <= 0 -> "Selecciona una categoria."
+            product.fkCategory == null || product.fkCategory <= 0 -> "Selecciona una categoría."
             product.fkArtist == null || product.fkArtist <= 0 -> "Selecciona un artista."
             else -> null
         }
@@ -200,7 +200,7 @@ class ProductControlViewModel : ViewModel() {
             rawMessage.contains("duplicate key", ignoreCase = true) ->
                 "Ya existe un producto con ese identificador."
             rawMessage.contains("violates foreign key", ignoreCase = true) ->
-                "La categoria, artista o proveedor seleccionado no existe en Supabase."
+                "La categoría, artista o proveedor seleccionado no existe en Supabase."
             rawMessage.contains("Could not find", ignoreCase = true) ->
                 "Revisa que la tabla products y sus columnas existan con los nombres esperados."
             else -> "Revisa la conexion y los permisos de Supabase."

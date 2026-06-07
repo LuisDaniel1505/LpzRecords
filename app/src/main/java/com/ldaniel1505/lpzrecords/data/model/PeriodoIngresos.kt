@@ -9,28 +9,28 @@ enum class PeriodoIngresos(
 ) {
     DIARIO(
         label = "Hoy",
-        descripcion = "Ultimas 24 horas",
+        descripcion = "Últimas 24 horas",
         rpcFunction = "get_ingresos_por_horas",
         paramName = "horas_atras",
         paramValue = 24
     ),
     SEMANAL(
         label = "Semanal",
-        descripcion = "Ultimos 7 dias",
+        descripcion = "Últimos 7 días",
         rpcFunction = "get_ingresos_diarios",
         paramName = "dias_atras",
         paramValue = 7
     ),
     MENSUAL(
         label = "Mensual",
-        descripcion = "Ultimos 30 dias",
+        descripcion = "Últimos 30 días",
         rpcFunction = "get_ingresos_diarios",
         paramName = "dias_atras",
         paramValue = 30
     ),
     ANUAL(
         label = "Anual",
-        descripcion = "Balance de los ultimos 12 meses",
+        descripcion = "Balance de los últimos 12 meses",
         rpcFunction = "get_ingresos_mensuales",
         paramName = "meses_atras",
         paramValue = 12

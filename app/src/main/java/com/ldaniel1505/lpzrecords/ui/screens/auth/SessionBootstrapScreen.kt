@@ -36,7 +36,7 @@ fun SessionBootstrapScreen(
             CircularProgressIndicator(color = LpzRed)
         } else {
             Text(
-                text = errorMessage ?: "No se pudo restaurar la sesion.",
+                text = errorMessage ?: "No se pudo restaurar la sesión.",
                 color = LpzDark,
                 fontWeight = FontWeight.Medium
             )

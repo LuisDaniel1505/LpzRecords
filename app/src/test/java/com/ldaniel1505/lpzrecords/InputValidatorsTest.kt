@@ -4,6 +4,7 @@ import com.ldaniel1505.lpzrecords.util.InputValidators
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Calendar
 
 class InputValidatorsTest {
 
@@ -30,6 +31,26 @@ class InputValidatorsTest {
         assertTrue(InputValidators.isValidSupportedCard("5555555555554444"))
         assertFalse(InputValidators.isValidSupportedCard("4111111111111112"))
         assertFalse(InputValidators.isValidSupportedCard("378282246310005"))
+    }
+
+    @Test
+    fun simulatedCardFieldsAreValidated() {
+        val current = Calendar.getInstance()
+        val nextYear = (current.get(Calendar.YEAR) + 1) % 100
+        val validExpiry = "12/${nextYear.toString().padStart(2, '0')}"
+
+        assertTrue(InputValidators.isValidCardCvv("123"))
+        assertFalse(InputValidators.isValidCardCvv("12"))
+        assertFalse(InputValidators.isValidCardCvv("12A"))
+
+        assertTrue(InputValidators.isValidCardExpiry(validExpiry))
+        assertFalse(InputValidators.isValidCardExpiry("00/30"))
+        assertFalse(InputValidators.isValidCardExpiry("13/30"))
+        assertFalse(InputValidators.isValidCardExpiry("01/20"))
+
+        assertTrue(InputValidators.isValidCardHolder("Daniel Lopez"))
+        assertFalse(InputValidators.isValidCardHolder("D"))
+        assertFalse(InputValidators.isValidCardHolder("Daniel123"))
     }
 
     @Test

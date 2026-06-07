@@ -60,6 +60,10 @@ fun PaymentMethodFormScreen(
 ) {
     val uiState by paymentMethodsViewModel.uiState.collectAsState()
     var cardNumber by remember { mutableStateOf("") }
+    var cvv by remember { mutableStateOf("") }
+    var expiryDate by remember { mutableStateOf("") }
+    var cardHolder by remember { mutableStateOf("") }
+    var postalCode by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.saveSuccess) {
@@ -70,12 +74,17 @@ fun PaymentMethodFormScreen(
     }
 
     val cleanNumber = cardNumber.filter { it.isDigit() }
-    val canSave = InputValidators.isValidSupportedCard(cleanNumber) && !uiState.isLoading
+    val canSave = InputValidators.isValidSupportedCard(cleanNumber) &&
+            InputValidators.isValidCardCvv(cvv) &&
+            InputValidators.isValidCardExpiry(expiryDate) &&
+            InputValidators.isValidCardHolder(cardHolder) &&
+            InputValidators.isValidPostalCode(postalCode) &&
+            !uiState.isLoading
 
     Scaffold(
         topBar = {
             PaymentFormTopBar(
-                title = "NUEVA TARJETA",
+                title = "Nueva tarjeta",
                 onNavigateBack = onNavigateBack
             )
         },
@@ -93,16 +102,55 @@ fun PaymentMethodFormScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             PaymentTextField(
-                label = "Numero de tarjeta",
+                label = "Número de tarjeta",
                 value = cardNumber,
                 onValueChange = {
                     val digits = it.filter { char -> char.isDigit() }
                     cardNumber = digits.take(InputValidators.CARD_NUMBER_LENGTH)
                     validationError = if (digits.length > InputValidators.CARD_NUMBER_LENGTH) {
-                        "Solo se permiten 16 numeros."
+                        "Solo se permiten 16 números."
                     } else {
                         null
                     }
+                },
+                keyboardType = KeyboardType.Number
+            )
+
+            PaymentTextField(
+                label = "CVV",
+                value = cvv,
+                onValueChange = {
+                    cvv = InputValidators.digitsOnly(it, InputValidators.CARD_CVV_LENGTH)
+                    validationError = null
+                },
+                keyboardType = KeyboardType.Number
+            )
+
+            PaymentTextField(
+                label = "Fecha de vencimiento (MM/AA)",
+                value = expiryDate,
+                onValueChange = {
+                    expiryDate = formatExpiryDate(it)
+                    validationError = null
+                },
+                keyboardType = KeyboardType.Number
+            )
+
+            PaymentTextField(
+                label = "Nombre del titular",
+                value = cardHolder,
+                onValueChange = {
+                    cardHolder = it.take(InputValidators.CARD_HOLDER_MAX_LENGTH)
+                    validationError = null
+                }
+            )
+
+            PaymentTextField(
+                label = "Código postal",
+                value = postalCode,
+                onValueChange = {
+                    postalCode = InputValidators.digitsOnly(it, InputValidators.POSTAL_CODE_LENGTH)
+                    validationError = null
                 },
                 keyboardType = KeyboardType.Number
             )
@@ -118,16 +166,29 @@ fun PaymentMethodFormScreen(
             Button(
                 onClick = {
                     if (!canSave) {
-                        validationError = if (cleanNumber.length != InputValidators.CARD_NUMBER_LENGTH) {
-                            "La tarjeta debe tener exactamente 16 numeros."
-                        } else {
-                            "El numero de tarjeta no es valido."
+                        validationError = when {
+                            cleanNumber.length != InputValidators.CARD_NUMBER_LENGTH ->
+                                "La tarjeta debe tener exactamente 16 números."
+                            !InputValidators.isValidSupportedCard(cleanNumber) ->
+                                "El número de tarjeta no es válido."
+                            !InputValidators.isValidCardCvv(cvv) ->
+                                "El CVV debe tener exactamente 3 dígitos."
+                            !InputValidators.isValidCardExpiry(expiryDate) ->
+                                "Ingresa una fecha de vencimiento válida en formato MM/AA."
+                            !InputValidators.isValidCardHolder(cardHolder) ->
+                                "Ingresa el nombre del titular de la tarjeta."
+                            else ->
+                                "El código postal debe tener exactamente 5 dígitos."
                         }
                         return@Button
                     }
 
                     paymentMethodsViewModel.createPaymentMethod(
-                        cardNumber = cardNumber
+                        cardNumber = cardNumber,
+                        cvv = cvv,
+                        expiryDate = expiryDate,
+                        cardHolder = cardHolder,
+                        postalCode = postalCode
                     )
                 },
                 enabled = !uiState.isLoading,
@@ -138,7 +199,7 @@ fun PaymentMethodFormScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = if (uiState.isLoading) "GUARDANDO" else "GUARDAR TARJETA",
+                    text = if (uiState.isLoading) "Guardando..." else "Guardar tarjeta",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -146,13 +207,22 @@ fun PaymentMethodFormScreen(
             }
 
             Text(
-                text = "Se admiten tarjetas Visa y Mastercard de 16 digitos. Solo se guardaran los ultimos cuatro.",
+                text = "Se admiten tarjetas Visa y Mastercard de 16 dígitos. Los datos son simulados; solo se guardarán los últimos cuatro dígitos.",
                 fontSize = 12.sp,
                 color = LpzDark.copy(alpha = 0.55f)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
         }
+    }
+}
+
+private fun formatExpiryDate(value: String): String {
+    val digits = value.filter { it.isDigit() }.take(4)
+    return if (digits.length <= 2) {
+        digits
+    } else {
+        "${digits.take(2)}/${digits.drop(2)}"
     }
 }
 

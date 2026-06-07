@@ -31,7 +31,7 @@ class ValidationViewModelTest {
         )
 
         assertEquals(
-            "El codigo postal debe tener exactamente 5 digitos.",
+            "El código postal debe tener exactamente 5 dígitos.",
             viewModel.uiState.value.errorMessage
         )
     }
@@ -40,9 +40,15 @@ class ValidationViewModelTest {
     fun paymentMethodRejectsInvalidLuhnNumberBeforeNetworkCall() {
         val viewModel = PaymentMethodsViewModel()
 
-        viewModel.createPaymentMethod("4111111111111112")
+        viewModel.createPaymentMethod(
+            cardNumber = "4111111111111112",
+            cvv = "123",
+            expiryDate = "12/30",
+            cardHolder = "Daniel Lopez",
+            postalCode = "23000"
+        )
 
-        assertEquals("El numero de tarjeta no es valido.", viewModel.uiState.value.errorMessage)
+        assertEquals("El número de tarjeta no es válido.", viewModel.uiState.value.errorMessage)
     }
 
     @Test

@@ -165,13 +165,13 @@ private fun EmptyCartState(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = "Tu carrito esta vacio",
+                text = "Tu carrito está vacío",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = LpzDark.copy(alpha = 0.55f)
             )
             Text(
-                text = "Agrega productos desde el catalogo",
+                text = "Agrega productos desde el catálogo",
                 fontSize = 13.sp,
                 color = LpzDark.copy(alpha = 0.40f)
             )
@@ -368,7 +368,7 @@ private fun CartCheckoutPanel(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "PAGAR AHORA",
+                    text = "Pagar ahora",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,

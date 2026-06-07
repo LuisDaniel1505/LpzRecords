@@ -415,7 +415,7 @@ fun ProductFormDialog(
     }
 
     var selectedCategory by remember(existingProduct) {
-        mutableStateOf(existingProduct?.category ?: Category(id = 0, name = "Selecciona una categoria"))
+        mutableStateOf(existingProduct?.category ?: Category(id = 0, name = "Selecciona una categoría"))
     }
     var selectedArtist by remember(existingProduct) {
         mutableStateOf(existingProduct?.artist ?: Artist(id = 0, name = "Selecciona un artista", biography = "", musical_genre = ""))
@@ -445,8 +445,8 @@ fun ProductFormDialog(
     val validationMessage = when {
         title.isBlank() -> "Ingresa el nombre del producto."
         title.trim().length > InputValidators.PRODUCT_TITLE_MAX_LENGTH -> "El nombre no puede exceder 150 caracteres."
-        description.length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH -> "La descripcion no puede exceder 1000 caracteres."
-        selectedCategory.id <= 0 -> "Selecciona una categoria."
+        description.length > InputValidators.PRODUCT_DESCRIPTION_MAX_LENGTH -> "La descripción no puede exceder 1000 caracteres."
+        selectedCategory.id <= 0 -> "Selecciona una categoría."
         selectedArtist.id <= 0 -> "Selecciona un artista."
         priceValue == null || priceValue <= 0.0 -> "El precio debe ser mayor a 0."
         !InputValidators.hasAtMostTwoDecimals(priceValue) -> "El precio solo puede tener dos decimales."

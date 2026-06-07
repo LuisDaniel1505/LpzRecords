@@ -133,7 +133,7 @@ class ProfileViewModel : ViewModel() {
         }
         if (!InputValidators.isValidOptionalPhone(cleanPhone)) {
             _uiState.update {
-                it.copy(errorMessage = "El telefono debe tener exactamente 10 digitos.")
+                it.copy(errorMessage = "El teléfono debe tener exactamente 10 dígitos.")
             }
             return
         }
@@ -199,7 +199,7 @@ class ProfileViewModel : ViewModel() {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No se pudo cerrar sesion."
+                        errorMessage = "No se pudo cerrar sesión."
                     )
                 }
             }
@@ -217,7 +217,7 @@ class ProfileViewModel : ViewModel() {
     fun createPaymentMethod() {
         viewModelScope.launch {
             try {
-                // Pendiente: se implementara con los formularios de metodos de pago.
+                // Pendiente: se implementará con los formularios de métodos de pago.
             } catch (_: Exception) {
             }
         }
@@ -227,7 +227,7 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 id.ifBlank { return@launch }
-                // Pendiente: se implementara con los formularios de metodos de pago.
+                // Pendiente: se implementará con los formularios de métodos de pago.
             } catch (_: Exception) {
             }
         }

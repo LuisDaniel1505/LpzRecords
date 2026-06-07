@@ -97,7 +97,7 @@ fun PersonalInfoScreen(
         fullName.isNotBlank() && !InputValidators.isValidName(fullName) ->
             "El nombre debe tener entre 2 y 80 caracteres."
         phone.isNotBlank() && !InputValidators.isValidOptionalPhone(phone) ->
-            "El telefono debe tener exactamente 10 digitos."
+            "El teléfono debe tener exactamente 10 dígitos."
         else -> null
     }
 
@@ -105,7 +105,7 @@ fun PersonalInfoScreen(
         topBar = { PersonalInfoTopBar(onNavigateBack = onNavigateToProfile) },
         bottomBar = {
             LpzBottomNavBar(
-                selectedTab = BottomNavTab.PROFILE,
+                selectedTab = null,
                 onHome = onNavigateToHome,
                 onSearch = onNavigateToSearch,
                 onCart = onNavigateToCart,

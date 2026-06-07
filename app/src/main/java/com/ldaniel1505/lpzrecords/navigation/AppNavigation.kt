@@ -1,10 +1,16 @@
 package com.ldaniel1505.lpzrecords.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -15,6 +21,7 @@ import com.ldaniel1505.lpzrecords.ui.screens.MainScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AccountScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AddressFormScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.AddressesScreen
+import com.ldaniel1505.lpzrecords.ui.screens.account.OrderDetailScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.OrdersScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodFormScreen
 import com.ldaniel1505.lpzrecords.ui.screens.account.PaymentMethodsScreen
@@ -29,6 +36,7 @@ import com.ldaniel1505.lpzrecords.ui.screens.catalog.ProductDetailScreen
 import com.ldaniel1505.lpzrecords.ui.screens.checkout.CheckoutScreen
 import com.ldaniel1505.lpzrecords.ui.screens.favorites.FavoritesScreen
 import com.ldaniel1505.lpzrecords.ui.screens.search.SearchScreen
+import com.ldaniel1505.lpzrecords.data.network.SupabaseClient
 import com.ldaniel1505.lpzrecords.viewmodel.account.AddressViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.account.PaymentMethodsViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.cart.CartViewModel
@@ -38,6 +46,7 @@ import com.ldaniel1505.lpzrecords.viewmodel.auth.SessionBootstrapViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.auth.SessionDestination
 import com.ldaniel1505.lpzrecords.viewmodel.orders.OrdersViewModel
 import com.ldaniel1505.lpzrecords.viewmodel.profile.ProfileViewModel
+import io.github.jan.supabase.gotrue.auth
 
 @Composable
 fun AppNavigation() {
@@ -51,6 +60,19 @@ fun AppNavigation() {
     val ordersViewModel: OrdersViewModel = viewModel()
     val favoriteProducts by favoritesViewModel.favoriteProducts.collectAsState()
     val favoriteProductIds = favoriteProducts.map { it.id }.toSet()
+    var showRegistrationRequiredDialog by remember { mutableStateOf(false) }
+
+    fun isAuthenticated(): Boolean {
+        return SupabaseClient.client.auth.currentUserOrNull() != null
+    }
+
+    fun requireAccount(action: () -> Unit) {
+        if (isAuthenticated()) {
+            action()
+        } else {
+            showRegistrationRequiredDialog = true
+        }
+    }
 
     fun navigateToStoreRoot(route: String) {
         navController.navigate(route) {
@@ -66,15 +88,19 @@ fun AppNavigation() {
     }
 
     fun navigateToCart() {
-        navigateToStoreRoot(Screen.Cart.route)
+        requireAccount { navigateToStoreRoot(Screen.Cart.route) }
     }
 
     fun navigateToFavorites() {
-        navigateToStoreRoot(Screen.Favorites.route)
+        requireAccount { navigateToStoreRoot(Screen.Favorites.route) }
     }
 
     fun navigateToAccount() {
-        navigateToStoreRoot(Screen.Account.route)
+        requireAccount { navigateToStoreRoot(Screen.Account.route) }
+    }
+
+    fun navigateToOrders() {
+        requireAccount { navigateToStoreRoot(Screen.Orders.route) }
     }
 
     fun navigateClearingBackStack(route: String) {
@@ -175,13 +201,14 @@ fun AppNavigation() {
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navigateToCart() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToProfile = { navigateToAccount() },
+                onNavigateToProfile = { navigateToOrders() },
+                onNavigateToAccount = { navigateToAccount() },
                 onNavigateToProduct = { productId ->
                     navController.navigate(Screen.ProductDetail.createRoute(productId))
                 },
                 favoriteProductIds = favoriteProductIds,
-                onAddToCart = { product -> cartViewModel.addProduct(product) },
-                onToggleFavorite = { product -> favoritesViewModel.toggleFavorite(product) },
+                onAddToCart = { product -> requireAccount { cartViewModel.addProduct(product) } },
+                onToggleFavorite = { product -> requireAccount { favoritesViewModel.toggleFavorite(product) } },
                 cartViewModel = cartViewModel
             )
         }
@@ -192,7 +219,8 @@ fun AppNavigation() {
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToCart = { navigateToCart() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToProfile = { navigateToAccount() },
+                onNavigateToProfile = { navigateToOrders() },
+                onNavigateToAccount = { navigateToAccount() },
                 onNavigateToProduct = { productId ->
                     navController.navigate(Screen.ProductDetail.createRoute(productId))
                 }
@@ -212,28 +240,33 @@ fun AppNavigation() {
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToProfile = { navigateToAccount() },
-                onAddToCart = { product -> cartViewModel.addProduct(product) },
+                onNavigateToProfile = { navigateToOrders() },
+                onAddToCart = { product -> requireAccount { cartViewModel.addProduct(product) } },
                 onBuyNow = { product ->
-                    cartViewModel.addProductIfMissing(product)
-                    navController.navigate(Screen.Checkout.route)
+                    requireAccount {
+                        cartViewModel.addProductIfMissing(product)
+                        navController.navigate(Screen.Checkout.route)
+                    }
                 },
                 favoriteProductIds = favoriteProductIds,
-                onToggleFavorite = { product -> favoritesViewModel.toggleFavorite(product) },
+                onToggleFavorite = { product -> requireAccount { favoritesViewModel.toggleFavorite(product) } },
                 cartViewModel = cartViewModel
             )
         }
 
         composable(Screen.Account.route) {
             BackHandler { navigateToCatalog() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             AccountScreen(
                 profileViewModel = profileViewModel,
-                ordersViewModel = ordersViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navigateToCart() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToOrders = { navController.navigate(Screen.Orders.route) },
                 onNavigateToPersonalInfo = { navController.navigate(Screen.PersonalInfo.route) },
                 onNavigateToAddresses = { navController.navigate(Screen.Addresses.route) },
                 onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
@@ -246,18 +279,50 @@ fun AppNavigation() {
 
         composable(Screen.Orders.route) {
             BackHandler { navigateToAccount() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             OrdersScreen(
                 viewModel = ordersViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navigateToCart() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToProfile = { navigateToAccount() }
+                onNavigateToProfile = { navigateToAccount() },
+                onNavigateToOrderDetail = { orderId ->
+                    navController.navigate(Screen.OrderDetail.createRoute(orderId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.OrderDetail.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
+            BackHandler { navController.popBackStack() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                } else if (ordersViewModel.orders.isEmpty()) {
+                    ordersViewModel.fetchOrders()
+                }
+            }
+            OrderDetailScreen(
+                order = ordersViewModel.selectedOrder(orderId),
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.PersonalInfo.route) {
             BackHandler { navigateToAccount() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             PersonalInfoScreen(
                 profileViewModel = profileViewModel,
                 onNavigateToHome = { navigateToCatalog() },
@@ -270,6 +335,11 @@ fun AppNavigation() {
 
         composable(Screen.Addresses.route) {
             BackHandler { navigateToAccount() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             AddressesScreen(
                 addressViewModel = addressViewModel,
                 onNavigateToHome = { navigateToCatalog() },
@@ -283,6 +353,11 @@ fun AppNavigation() {
 
         composable(Screen.AddressForm.route) {
             BackHandler { navController.popBackStack() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             AddressFormScreen(
                 addressViewModel = addressViewModel,
                 onNavigateBack = { navController.popBackStack() }
@@ -291,6 +366,11 @@ fun AppNavigation() {
 
         composable(Screen.PaymentMethods.route) {
             BackHandler { navigateToAccount() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             PaymentMethodsScreen(
                 paymentMethodsViewModel = paymentMethodsViewModel,
                 onNavigateToHome = { navigateToCatalog() },
@@ -304,6 +384,11 @@ fun AppNavigation() {
 
         composable(Screen.PaymentMethodForm.route) {
             BackHandler { navController.popBackStack() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             PaymentMethodFormScreen(
                 paymentMethodsViewModel = paymentMethodsViewModel,
                 onNavigateBack = { navController.popBackStack() }
@@ -312,19 +397,29 @@ fun AppNavigation() {
 
         composable(Screen.Cart.route) {
             BackHandler { navigateToCatalog() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             CartScreen(
                 cartViewModel = cartViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToProfile = { navigateToAccount() },
+                onNavigateToProfile = { navigateToOrders() },
                 onNavigateToCheckout = { navController.navigate(Screen.Checkout.route) }
             )
         }
 
         composable(Screen.Checkout.route) {
             BackHandler { navigateToCatalog() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             CheckoutScreen(
                 checkoutViewModel = checkoutViewModel,
                 cartViewModel = cartViewModel,
@@ -334,7 +429,7 @@ fun AppNavigation() {
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToFavorites = { navigateToFavorites() },
-                onNavigateToProfile = { navigateToAccount() },
+                onNavigateToProfile = { navigateToOrders() },
                 onNavigateToAddresses = { navController.navigate(Screen.Addresses.route) },
                 onNavigateToPaymentMethods = { navController.navigate(Screen.PaymentMethods.route) },
                 onConfirmOrder = {
@@ -348,19 +443,47 @@ fun AppNavigation() {
 
         composable(Screen.Favorites.route) {
             BackHandler { navigateToCatalog() }
+            LaunchedEffect(Unit) {
+                if (!isAuthenticated()) {
+                    navigateClearingBackStack(Screen.Login.route)
+                }
+            }
             FavoritesScreen(
                 favoritesViewModel = favoritesViewModel,
                 onNavigateToHome = { navigateToCatalog() },
                 onNavigateToSearch = { navigateToSearch() },
                 onNavigateToCart = { navigateToCart() },
-                onNavigateToProfile = { navigateToAccount() },
+                onNavigateToProfile = { navigateToOrders() },
                 onNavigateToProduct = { productId ->
                     navController.navigate(Screen.ProductDetail.createRoute(productId))
                 },
-                onAddToCart = { product -> cartViewModel.addProduct(product) },
-                onToggleFavorite = { product -> favoritesViewModel.toggleFavorite(product) },
+                onAddToCart = { product -> requireAccount { cartViewModel.addProduct(product) } },
+                onToggleFavorite = { product -> requireAccount { favoritesViewModel.toggleFavorite(product) } },
                 cartViewModel = cartViewModel
             )
         }
+    }
+
+    if (showRegistrationRequiredDialog) {
+        AlertDialog(
+            onDismissRequest = { showRegistrationRequiredDialog = false },
+            title = { Text("Registro requerido") },
+            text = { Text("Necesitas registrarte para realizar esta acción.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRegistrationRequiredDialog = false
+                        navigateClearingBackStack(Screen.Login.route)
+                    }
+                ) {
+                    Text("Iniciar sesión")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRegistrationRequiredDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

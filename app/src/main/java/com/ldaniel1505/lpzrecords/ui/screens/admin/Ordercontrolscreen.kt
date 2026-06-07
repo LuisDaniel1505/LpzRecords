@@ -64,7 +64,8 @@ data class AdminOrder(
     val clientName: String,    // TODO (BACKEND): Vendrá del JOIN con la tabla users
     val total: Double,         // TODO (BACKEND): Calculado desde el servidor (sum de order_items)
     val itemCount: Long,       // TODO (BACKEND): Conteo real de order_items
-    val status: OrderStatus
+    val status: OrderStatus,
+    val cancellationReason: String? = null
 )
 
 // ── Datos de ejemplo — eliminar cuando el ViewModel provea datos reales ──────
@@ -166,6 +167,13 @@ fun OrderControlScreen(
                             onStatusChange = { newStatus ->
                                 // En el backend, esto haría un PATCH a /orders/{id} con { status: newStatus }
                                 viewModel.updateOrderStatus(order.id, newStatus.displayName)
+                            },
+                            onCancelWithReason = { reason ->
+                                viewModel.updateOrderStatus(
+                                    idSale = order.id,
+                                    status = OrderStatus.CANCELADO.displayName,
+                                    cancellationReason = reason
+                                )
                             }
                         )
                     }
@@ -236,7 +244,8 @@ private fun AdminOrderListItem.toAdminOrder(): AdminOrder {
         clientName = customerName,
         total = total,
         itemCount = itemCount,
-        status = status.toOrderStatus()
+        status = status.toOrderStatus(),
+        cancellationReason = cancellationReason
     )
 }
 
@@ -263,10 +272,23 @@ private fun AdminOrderCard(
     order: AdminOrder,
     statusSelectorEnabled: Boolean = true,
     isUpdating: Boolean = false,
-    onStatusChange: (OrderStatus) -> Unit
+    onStatusChange: (OrderStatus) -> Unit,
+    onCancelWithReason: (String) -> Unit
 ) {
 
     var isExpanded by remember { mutableStateOf(false) }
+    var showCancelDialog by remember { mutableStateOf(false) }
+
+    if (showCancelDialog) {
+        CancelReasonDialog(
+            onConfirm = { reason ->
+                showCancelDialog = false
+                isExpanded = false
+                onCancelWithReason(reason)
+            },
+            onDismiss = { showCancelDialog = false }
+        )
+    }
 
     Card(
         shape     = RoundedCornerShape(16.dp),
@@ -338,6 +360,23 @@ private fun AdminOrderCard(
                 )
             }
 
+            if (order.status == OrderStatus.CANCELADO && !order.cancellationReason.isNullOrBlank()) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        text          = "RAZÓN DE CANCELACIÓN",
+                        fontSize      = 10.sp,
+                        fontWeight    = FontWeight.Bold,
+                        color         = LpzDark.copy(alpha = 0.45f),
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text     = order.cancellationReason,
+                        fontSize = 13.sp,
+                        color    = LpzDark.copy(alpha = 0.72f)
+                    )
+                }
+            }
+
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -385,9 +424,15 @@ private fun AdminOrderCard(
                                 modifier            = Modifier.fillMaxWidth(),
                                 onClick             = {
                                     if (status != order.status) {
-                                        onStatusChange(status)
+                                        if (status == OrderStatus.CANCELADO) {
+                                            showCancelDialog = true
+                                        } else {
+                                            onStatusChange(status)
+                                            isExpanded = false
+                                        }
+                                    } else {
+                                        isExpanded = false
                                     }
-                                    isExpanded = false
                                 }
                             )
                         }
@@ -400,6 +445,56 @@ private fun AdminOrderCard(
 
 
 @Composable
+private fun CancelReasonDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var reason by remember { mutableStateOf("") }
+    val cleanReason = reason.trim()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Text(
+                text = "Razón de cancelación",
+                fontWeight = FontWeight.Bold,
+                color = LpzDark
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Escribe la razón para cancelar este pedido.",
+                    color = LpzDark.copy(alpha = 0.72f),
+                    fontSize = 14.sp
+                )
+                TextField(
+                    value = reason,
+                    onValueChange = { reason = it.take(180) },
+                    label = { Text("Razón") },
+                    minLines = 2
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = cleanReason.isNotBlank(),
+                onClick = { onConfirm(cleanReason) }
+            ) {
+                Text("Cancelar pedido", color = LpzRed, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Volver", color = LpzDark.copy(alpha = 0.65f))
+            }
+        }
+    )
+}
+
+
+@Composable
 private fun OrderStatusChip(
     status: OrderStatus,
     inSelectorMode: Boolean,
@@ -408,11 +503,11 @@ private fun OrderStatusChip(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    val bgColor   = if (inSelectorMode) Color(0xFFFFCDD2) else status.displayBgColor()
-    val textColor = if (inSelectorMode) Color(0xFFB71C1C) else status.displayTextColor()
+    val bgColor   = status.displayBgColor()
+    val textColor = status.displayTextColor()
 
     val borderStroke: BorderStroke? = if (inSelectorMode && isCurrentSelection)
-        BorderStroke(2.dp, Color(0xFFB71C1C))
+        BorderStroke(2.dp, status.displayTextColor())
     else null
 
     Surface(
