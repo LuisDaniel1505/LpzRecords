@@ -1,0 +1,28 @@
+package com.ldaniel1505.lpzrecords.navigation
+
+sealed class Screen(val route: String) {
+    object Bootstrap     : Screen("bootstrap_screen")
+    object Main          : Screen("main_screen")
+    object Login         : Screen("login_screen")
+    object SignUp        : Screen("signup_screen")
+    object Catalog       : Screen("catalog_screen")
+    object Search        : Screen("search_screen")
+    object Account       : Screen("account_screen")
+    object Orders        : Screen("orders_screen")
+    object PersonalInfo  : Screen("personal_info_screen")
+    object Addresses     : Screen("addresses_screen")
+    object AddressForm   : Screen("address_form_screen")
+    object PaymentMethods: Screen("payment_methods_screen")
+    object PaymentMethodForm : Screen("payment_method_form_screen")
+    object Cart          : Screen("cart_screen")
+    object Checkout      : Screen("checkout_screen")
+    object Favorites     : Screen("favorites_screen")
+    object Admin         : Screen("admin_screen")
+    object OrderDetail   : Screen("order_detail/{orderId}") {
+        fun createRoute(orderId: String) = "order_detail/$orderId"
+    }
+
+    object ProductDetail : Screen("product_detail/{productId}") {
+        fun createRoute(productId: String) = "product_detail/$productId"
+    }
+}
