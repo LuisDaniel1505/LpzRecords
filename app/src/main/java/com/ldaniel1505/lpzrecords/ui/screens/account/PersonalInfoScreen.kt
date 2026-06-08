@@ -135,7 +135,7 @@ fun PersonalInfoScreen(
             )
 
             EditableInfoCard(
-                label = "CORREO ELECTROÓNICO",
+                label = "CORREO ELECTRÓNICO",
                 value = email,
                 onValueChange = {},
                 keyboardType = KeyboardType.Email,

@@ -40,8 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +65,7 @@ fun PaymentMethodFormScreen(
     val uiState by paymentMethodsViewModel.uiState.collectAsState()
     var cardNumber by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
-    var expiryDate by remember { mutableStateOf("") }
+    var expiryDigits by remember { mutableStateOf("") }
     var cardHolder by remember { mutableStateOf("") }
     var postalCode by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
@@ -74,6 +78,7 @@ fun PaymentMethodFormScreen(
     }
 
     val cleanNumber = cardNumber.filter { it.isDigit() }
+    val expiryDate = formatExpiryDate(expiryDigits)
     val canSave = InputValidators.isValidSupportedCard(cleanNumber) &&
             InputValidators.isValidCardCvv(cvv) &&
             InputValidators.isValidCardExpiry(expiryDate) &&
@@ -128,12 +133,13 @@ fun PaymentMethodFormScreen(
 
             PaymentTextField(
                 label = "Fecha de vencimiento (MM/AA)",
-                value = expiryDate,
+                value = expiryDigits,
                 onValueChange = {
-                    expiryDate = formatExpiryDate(it)
+                    expiryDigits = InputValidators.digitsOnly(it, EXPIRY_DATE_DIGIT_LENGTH)
                     validationError = null
                 },
-                keyboardType = KeyboardType.Number
+                keyboardType = KeyboardType.Number,
+                visualTransformation = ExpiryDateVisualTransformation
             )
 
             PaymentTextField(
@@ -217,8 +223,10 @@ fun PaymentMethodFormScreen(
     }
 }
 
+private const val EXPIRY_DATE_DIGIT_LENGTH = 4
+
 private fun formatExpiryDate(value: String): String {
-    val digits = value.filter { it.isDigit() }.take(4)
+    val digits = value.filter { it.isDigit() }.take(EXPIRY_DATE_DIGIT_LENGTH)
     return if (digits.length <= 2) {
         digits
     } else {
@@ -231,7 +239,8 @@ private fun PaymentTextField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -244,6 +253,7 @@ private fun PaymentTextField(
             modifier = Modifier.fillMaxWidth(),
             label = { Text(label) },
             singleLine = true,
+            visualTransformation = visualTransformation,
             keyboardOptions = KeyboardOptions(
                 keyboardType = keyboardType
             ),
@@ -253,6 +263,32 @@ private fun PaymentTextField(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
+        )
+    }
+}
+
+private object ExpiryDateVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val digits = text.text.filter { it.isDigit() }.take(EXPIRY_DATE_DIGIT_LENGTH)
+        val formatted = if (digits.length <= 2) {
+            digits
+        } else {
+            "${digits.take(2)}/${digits.drop(2)}"
+        }
+
+        return TransformedText(
+            AnnotatedString(formatted),
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int {
+                    val coerced = offset.coerceIn(0, digits.length)
+                    return if (coerced <= 2) coerced else coerced + 1
+                }
+
+                override fun transformedToOriginal(offset: Int): Int {
+                    val coerced = offset.coerceIn(0, formatted.length)
+                    return if (coerced <= 2) coerced else (coerced - 1).coerceAtMost(digits.length)
+                }
+            }
         )
     }
 }
