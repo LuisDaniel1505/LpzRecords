@@ -158,7 +158,7 @@ fun LoginScreen(
                             if (email.trim().isEmpty() || password.isEmpty()) {
                                 validacionLocalError = "Por favor, introduce correo y contraseña."
                             } else if (!InputValidators.isValidEmail(email)) {
-                                validacionLocalError = "Por favor, introduce un correo valido."
+                                validacionLocalError = "Por favor, introduce un correo válido."
                             } else {
                                 validacionLocalError = ""
                                 viewModel.loginUsuario(email.trim(), password)

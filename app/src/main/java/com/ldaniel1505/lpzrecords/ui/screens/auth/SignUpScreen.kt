@@ -205,9 +205,9 @@ fun SignUpScreen(
                             if (!InputValidators.isValidName(cleanName)) {
                                 validationError = "El nombre debe tener entre 2 y 80 caracteres."
                             } else if (!InputValidators.isValidEmail(cleanEmail)) {
-                                validationError = "Por favor, introduce un correo valido."
+                                validationError = "Por favor, introduce un correo válido."
                             } else if (!InputValidators.isValidPassword(password)) {
-                                validationError = "La contrasena debe tener al menos 6 caracteres."
+                                validationError = "La contraseña debe tener al menos 6 caracteres."
                             } else {
                                 validationError = ""
                                 viewModel.signUpUser(cleanName, cleanEmail, password)

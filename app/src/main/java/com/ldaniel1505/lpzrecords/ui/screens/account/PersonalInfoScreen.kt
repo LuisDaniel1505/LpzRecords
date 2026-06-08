@@ -135,7 +135,7 @@ fun PersonalInfoScreen(
             )
 
             EditableInfoCard(
-                label = "CORREO ELECTRONICO",
+                label = "CORREO ELECTROÓNICO",
                 value = email,
                 onValueChange = {},
                 keyboardType = KeyboardType.Email,
@@ -143,7 +143,7 @@ fun PersonalInfoScreen(
             )
 
             EditableInfoCard(
-                label = "TELEFONO",
+                label = "TELÉFONO",
                 value = phone,
                 onValueChange = {
                     phone = InputValidators.digitsOnly(it, InputValidators.PHONE_LENGTH)

@@ -127,7 +127,7 @@ class AdminDashboardViewModel : ViewModel() {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No se pudieron cargar las metricas del administrador."
+                        errorMessage = "No se pudieron cargar las métricas del administrador."
                     )
                 }
             }

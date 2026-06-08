@@ -85,7 +85,7 @@ fun AddressFormScreen(
     Scaffold(
         topBar = {
             FormTopBar(
-                title = "NUEVA DIRECCION",
+                title = "NUEVA DIRECCIÓN",
                 onNavigateBack = onNavigateBack
             )
         },
@@ -130,7 +130,7 @@ fun AddressFormScreen(
                 capitalization = KeyboardCapitalization.Characters
             )
             FormTextField(
-                label = "Codigo postal",
+                label = "Código postal",
                 value = postalCode,
                 onValueChange = {
                     postalCode = InputValidators.digitsOnly(it, InputValidators.POSTAL_CODE_LENGTH)
@@ -169,7 +169,7 @@ fun AddressFormScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = if (uiState.isLoading) "GUARDANDO" else "GUARDAR DIRECCION",
+                    text = if (uiState.isLoading) "GUARDANDO" else "GUARDAR DIRECCIÓN",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White

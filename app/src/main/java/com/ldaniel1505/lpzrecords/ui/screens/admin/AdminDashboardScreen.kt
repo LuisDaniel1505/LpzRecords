@@ -317,7 +317,7 @@ private fun UsersChartSection(
                     .height(88.dp)
             )
             UserMetricCard(
-                label = "7 DIAS",
+                label = "7 DÍAS",
                 value = usersLastSevenDays,
                 accentColor = Color(0xFFB78628),
                 isLoading = isLoading,
@@ -345,7 +345,7 @@ private fun UsersChartSection(
                         color = LpzDark
                     )
                     Text(
-                        text = "Actividad de los ultimos 7 dias",
+                        text = "Actividad de los últimos 7 días",
                         fontSize = 11.sp,
                         color = LpzDark.copy(alpha = 0.48f)
                     )
@@ -499,7 +499,7 @@ private fun UserChartEmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Sin registros en los ultimos 7 dias",
+            text = "Sin registros en los últimos 7 días",
             color = LpzDark.copy(alpha = 0.50f),
             fontSize = 13.sp,
             textAlign = TextAlign.Center

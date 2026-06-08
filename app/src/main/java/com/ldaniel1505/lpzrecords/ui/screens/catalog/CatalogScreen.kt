@@ -125,7 +125,7 @@ fun CatalogScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "CATEGORIAS",
+                text = "CATEGORÍAS",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = LpzRed
@@ -219,7 +219,7 @@ private fun CatalogTopBar(onNavigateToAccount: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "CATALOGO",
+                    text = "CATÁLOGO",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzDark

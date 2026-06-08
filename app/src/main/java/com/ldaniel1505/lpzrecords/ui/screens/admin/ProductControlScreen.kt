@@ -638,7 +638,7 @@ fun ProductFormDialog(
                             trailingIcon  = {
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Desplegar Proveedores",
+                                    contentDescription = "Desplegar proveedores",
                                     tint = LpzDark.copy(alpha = 0.6f)
                                 )
                             },
@@ -689,7 +689,7 @@ fun ProductFormDialog(
                             trailingIcon  = {
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Desplegar Artistas",
+                                    contentDescription = "Desplegar artistas",
                                     tint = LpzDark.copy(alpha = 0.6f)
                                 )
                             },
@@ -901,7 +901,7 @@ private fun FormFieldWhite(
 private fun AdminSearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
     TextField(
         value         = query,
-        onValueChange = onQueryChange, // <--- Aquí estaba el error
+        onValueChange = onQueryChange,
         modifier      = modifier.height(52.dp),
         placeholder   = { Text("Buscar", color = Color.Gray, fontSize = 14.sp) },
         leadingIcon   = {

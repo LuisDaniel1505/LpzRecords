@@ -373,7 +373,7 @@ private fun OrdersTopBar(onNavigateBack: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Mis compras",
+                    text = "MIS COMPRAS",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = LpzDark

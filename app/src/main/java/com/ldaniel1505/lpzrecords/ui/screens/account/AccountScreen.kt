@@ -164,7 +164,7 @@ fun AccountScreen(
                     )
                     RowDivider()
                     ConfigRow(
-                        title = "Metodos de pago",
+                        title = "Métodos de pago",
                         subtitle = "Tarjetas guardadas",
                         onClick = onNavigateToPaymentMethods
                     )
