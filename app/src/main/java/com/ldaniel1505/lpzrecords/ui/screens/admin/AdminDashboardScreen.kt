@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +63,7 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerPadding
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -69,8 +72,10 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.Position
+import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import java.util.Locale
 
 @Composable
@@ -145,8 +150,8 @@ fun AdminDashboardScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    value = uiState.totalUsers.toString(),
-                    label = "USUARIOS",
+                    value = uiState.totalOrders.toString(),
+                    label = "PEDIDOS",
                     accentColor = Color(0xFFE8C4B8),
                     modifier = Modifier.weight(1f)
                 )
@@ -299,7 +304,7 @@ private fun UsersChartSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             UserMetricCard(
-                label = "TOTAL",
+                label = "USARIOS TOTALES",
                 value = totalUsers,
                 accentColor = LpzRed,
                 isLoading = isLoading,
@@ -308,7 +313,7 @@ private fun UsersChartSection(
                     .height(88.dp)
             )
             UserMetricCard(
-                label = "HOY",
+                label = "REGISTROS HOY",
                 value = usersToday,
                 accentColor = Color(0xFF2E7D4F),
                 isLoading = isLoading,
@@ -317,7 +322,7 @@ private fun UsersChartSection(
                     .height(88.dp)
             )
             UserMetricCard(
-                label = "7 DÍAS",
+                label = "ÚLTIMOS 7 DÍAS",
                 value = usersLastSevenDays,
                 accentColor = Color(0xFFB78628),
                 isLoading = isLoading,
@@ -433,12 +438,15 @@ private fun UserRegistrationsChart(
         chart = rememberCartesianChart(
             rememberColumnCartesianLayer(
                 columnProvider = ColumnCartesianLayer.ColumnProvider.series(column),
-                dataLabel = rememberAxisLabelComponent(
+                dataLabel = rememberTextComponent(
                     style = TextStyle(
                         color = LpzDark.copy(alpha = 0.72f),
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    overflow = TextOverflow.Visible,
+                    padding = Insets(horizontal = 4.dp, vertical = 1.dp),
+                    minWidth = TextComponent.MinWidth.text("999")
                 ),
                 dataLabelValueFormatter = CartesianValueFormatter { _, y, _ ->
                     if (y <= 0.0) "" else y.toInt().toString()
@@ -597,7 +605,19 @@ private fun RevenueLineChart(viewModel: AdminDashboardViewModel) {
     val labels = viewModel.labelsIngresos
     val bestPeriod = viewModel.ingresosPeriodo.maxByOrNull { it.ingresos }
     val accumulated = viewModel.ingresosPeriodo.sumOf { it.ingresos }
-    val showPointLabels = viewModel.ingresosPeriodo.count { it.ingresos > 0.0 } <= 8
+    val showPointLabels = viewModel.ingresosPeriodo.any { it.ingresos > 0.0 }
+    val needsWideChart = viewModel.selectedPeriodo in setOf(
+        PeriodoIngresos.DIARIO,
+        PeriodoIngresos.MENSUAL,
+        PeriodoIngresos.ANUAL
+    )
+    val chartScrollState = rememberScrollState()
+
+    LaunchedEffect(needsWideChart, viewModel.selectedPeriodo, labels.size, chartScrollState.maxValue) {
+        if (needsWideChart && chartScrollState.maxValue > 0) {
+            chartScrollState.scrollTo(chartScrollState.maxValue)
+        }
+    }
     val lineColor = Color(0xFF4B83E6)
     val dataLabelBackground = rememberShapeComponent(
         fill = Fill(Color.White.copy(alpha = 0.94f)),
@@ -628,11 +648,13 @@ private fun RevenueLineChart(viewModel: AdminDashboardViewModel) {
             rememberAxisLabelComponent(
                 style = TextStyle(
                     color = LpzDark,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 ),
-                padding = Insets(horizontal = 5.dp, vertical = 2.dp),
-                background = dataLabelBackground
+                overflow = TextOverflow.Visible,
+                padding = Insets(horizontal = 8.dp, vertical = 3.dp),
+                background = dataLabelBackground,
+                minWidth = TextComponent.MinWidth.text("$999,999")
             )
         } else {
             null
@@ -643,49 +665,73 @@ private fun RevenueLineChart(viewModel: AdminDashboardViewModel) {
         }
     )
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberLineCartesianLayer(
-                lineProvider = LineCartesianLayer.LineProvider.series(revenueLine)
-            ),
-            startAxis = VerticalAxis.rememberStart(
-                label = rememberAxisLabelComponent(
-                    style = TextStyle(
-                        color = LpzDark.copy(alpha = 0.74f),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    padding = Insets(horizontal = 4.dp, vertical = 1.dp),
-                    background = axisLabelBackground
-                ),
-                horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
-                valueFormatter = CartesianValueFormatter { _, y, _ ->
-                    moneyAxis(y)
-                },
-                itemPlacer = VerticalAxis.ItemPlacer.count(count = { 5 })
-            ),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                label = rememberAxisLabelComponent(
-                    style = TextStyle(
-                        color = LpzDark.copy(alpha = 0.74f),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                ),
-                labelRotationDegrees = if (labels.size > 8) -28f else 0f,
-                valueFormatter = CartesianValueFormatter { _, x, _ ->
-                    labels.getOrElse(x.toInt()) { "" }
-                },
-                itemPlacer = HorizontalAxis.ItemPlacer.aligned(
-                    spacing = { axisLabelSpacing(labels.size) }
-                )
-            )
-        ),
-        modelProducer = viewModel.revenueModelProducer,
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(250.dp)
-    )
+            .then(
+                if (needsWideChart) {
+                    Modifier.horizontalScroll(chartScrollState)
+                } else {
+                    Modifier
+                }
+            )
+    ) {
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberLineCartesianLayer(
+                    lineProvider = LineCartesianLayer.LineProvider.series(revenueLine)
+                ),
+                layerPadding = {
+                    CartesianLayerPadding(
+                        unscalableStart = 44.dp,
+                        unscalableEnd = 120.dp
+                    )
+                },
+                startAxis = VerticalAxis.rememberStart(
+                    label = rememberAxisLabelComponent(
+                        style = TextStyle(
+                            color = LpzDark.copy(alpha = 0.74f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        padding = Insets(horizontal = 4.dp, vertical = 1.dp),
+                        background = axisLabelBackground
+                    ),
+                    horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
+                    valueFormatter = CartesianValueFormatter { _, y, _ ->
+                        moneyAxis(y)
+                    },
+                    itemPlacer = VerticalAxis.ItemPlacer.count(count = { 5 })
+                ),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    label = rememberAxisLabelComponent(
+                        style = TextStyle(
+                            color = LpzDark.copy(alpha = 0.74f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    ),
+                    labelRotationDegrees = if (labels.size > 8) -28f else 0f,
+                    valueFormatter = CartesianValueFormatter { _, x, _ ->
+                        labels.getOrElse(x.toInt()) { "" }
+                    },
+                    itemPlacer = HorizontalAxis.ItemPlacer.aligned(
+                        spacing = { axisLabelSpacing(labels.size) }
+                    )
+                )
+            ),
+            modelProducer = viewModel.revenueModelProducer,
+            modifier = Modifier
+                .then(
+                    if (needsWideChart) {
+                        Modifier.width(revenueScrollableChartWidth(labels.size))
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
+                )
+                .height(250.dp)
+        )
+    }
 
     RevenuePeriodValues(items = viewModel.ingresosPeriodo)
 
@@ -1054,6 +1100,9 @@ private fun axisLabelSpacing(labelCount: Int): Int {
         else -> 5
     }
 }
+
+private fun revenueScrollableChartWidth(labelCount: Int) =
+    (labelCount * 116).coerceAtLeast(900).dp
 
 private fun String.toInitials(): String {
     return split(" ")

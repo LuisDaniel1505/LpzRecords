@@ -39,6 +39,7 @@ data class AdminDashboardUiState(
     val totalProfit: Double = 0.0,
     val totalProducts: Int = 0,
     val totalUsers: Int = 0,
+    val totalOrders: Int = 0,
     val usersToday: Int = 0,
     val usersLastSevenDays: Int = 0,
     val userRegistrationsLastSevenDays: List<Int> = List(7) { 0 },
@@ -101,20 +102,27 @@ class AdminDashboardViewModel : ViewModel() {
                     val rpcRevenue = loadAnnualRevenueTotal()
                     val totalProfit = loadTotalProfit()
                     val userRegistrationSummary = buildUserRegistrationSummary(users)
+                    val recentOrders = loadRecentOrders(
+                        usersById = usersById,
+                        fallbackSales = sales
+                    )
+                    val totalOrders = maxOf(
+                        sales.size,
+                        loadTotalOrdersFromRpc() ?: 0,
+                        recentOrders.size
+                    )
 
                     AdminDashboardUiState(
                         totalRevenue = directRevenue.takeIf { it > 0.0 } ?: rpcRevenue,
                         totalProfit = totalProfit,
                         totalProducts = products.size,
                         totalUsers = users.size,
+                        totalOrders = totalOrders,
                         usersToday = userRegistrationSummary.dailyCounts.lastOrNull() ?: 0,
                         usersLastSevenDays = userRegistrationSummary.dailyCounts.sum(),
                         userRegistrationsLastSevenDays = userRegistrationSummary.dailyCounts,
                         userRegistrationLabels = userRegistrationSummary.labels,
-                        recentOrders = loadRecentOrders(
-                            usersById = usersById,
-                            fallbackSales = sales
-                        ),
+                        recentOrders = recentOrders,
                         adminName = adminName,
                         adminInitials = adminName.toInitials()
                     )
@@ -161,8 +169,8 @@ class AdminDashboardViewModel : ViewModel() {
         usersById: Map<String, AdminUserRow>,
         fallbackSales: List<AdminSaleRow>
     ): List<AdminRecentOrder> {
-        val rpcOrders = loadRecentOrdersRpc("get_admin_recent_orders_v2")
-            .ifEmpty { loadRecentOrdersRpc("get_admin_recent_orders") }
+        val rpcOrders = loadRecentOrdersRpc("get_admin_recent_orders_v2", limitCount = 5)
+            .ifEmpty { loadRecentOrdersRpc("get_admin_recent_orders", limitCount = 5) }
 
         if (rpcOrders.isNotEmpty()) {
             return rpcOrders.map { it.toAdminRecentOrder() }
@@ -183,17 +191,28 @@ class AdminDashboardViewModel : ViewModel() {
             }
     }
 
-    private suspend fun loadRecentOrdersRpc(functionName: String): List<AdminRecentOrderRpcRow> {
+    private suspend fun loadRecentOrdersRpc(
+        functionName: String,
+        limitCount: Int
+    ): List<AdminRecentOrderRpcRow> {
         return runCatching {
             SupabaseClient.client.postgrest
                 .rpc(
                     function = functionName,
                     parameters = buildJsonObject {
-                        put("limit_count", 5)
+                        put("limit_count", limitCount)
                     }
                 )
                 .decodeList<AdminRecentOrderRpcRow>()
         }.getOrDefault(emptyList())
+    }
+
+    private suspend fun loadTotalOrdersFromRpc(): Int? {
+        val orderCount = loadRecentOrdersRpc("get_admin_recent_orders_v2", limitCount = 10000)
+            .ifEmpty { loadRecentOrdersRpc("get_admin_recent_orders", limitCount = 10000) }
+            .size
+
+        return orderCount.takeIf { it > 0 }
     }
 
     private fun updateUserChart(dailyCounts: List<Int>) {
@@ -225,14 +244,14 @@ class AdminDashboardViewModel : ViewModel() {
                         .decodeList<IngresosPeriodo>()
                 }
 
-                ingresosPeriodo = resultado
-                labelsIngresos = resultado.map { it.label }
+                val periodosCompletos = resultado.withMissingRevenuePeriods(periodo)
 
-                if (resultado.isNotEmpty()) {
-                    revenueModelProducer.runTransaction {
-                        lineSeries {
-                            series(resultado.map { it.ingresos.toFloat() })
-                        }
+                ingresosPeriodo = periodosCompletos
+                labelsIngresos = periodosCompletos.map { it.label }
+
+                revenueModelProducer.runTransaction {
+                    lineSeries {
+                        series(periodosCompletos.map { it.ingresos.toFloat() })
                     }
                 }
             } catch (_: Exception) {
@@ -270,6 +289,127 @@ private data class UserRegistrationSummary(
     val dailyCounts: List<Int>,
     val labels: List<String>
 )
+
+private val spanishMexicoLocale: Locale = Locale.forLanguageTag("es-MX")
+
+private fun List<IngresosPeriodo>.withMissingRevenuePeriods(periodo: PeriodoIngresos): List<IngresosPeriodo> {
+    val rowsByPeriod = groupBy { row -> row.revenueKey(periodo) }
+        .filterKeys { key -> key != null }
+        .mapKeys { (key, _) -> key.orEmpty() }
+        .mapValues { (_, rows) -> rows.combineRevenueRows() }
+    val rowsByLabel = groupBy { row -> row.label.normalizedLabel() }
+        .mapValues { (_, rows) -> rows.combineRevenueRows() }
+
+    return periodo.expectedRevenuePeriods().map { expected ->
+        val periodMatch = expected.revenueKey(periodo)?.let { key -> rowsByPeriod[key] }
+        val labelMatch = rowsByLabel[expected.label.normalizedLabel()]
+        (periodMatch ?: labelMatch)?.copy(
+            periodo = expected.periodo,
+            label = expected.label
+        ) ?: expected
+    }
+}
+
+private fun List<IngresosPeriodo>.combineRevenueRows(): IngresosPeriodo {
+    val first = first()
+    return first.copy(
+        totalVentas = sumOf { it.totalVentas },
+        ingresos = sumOf { it.ingresos }
+    )
+}
+
+private fun PeriodoIngresos.expectedRevenuePeriods(): List<IngresosPeriodo> {
+    return when (this) {
+        PeriodoIngresos.DIARIO -> expectedHourlyRevenuePeriods(paramValue)
+        PeriodoIngresos.SEMANAL -> expectedDailyRevenuePeriods(paramValue, this)
+        PeriodoIngresos.MENSUAL -> expectedDailyRevenuePeriods(paramValue, this)
+        PeriodoIngresos.ANUAL -> expectedMonthlyRevenuePeriods(paramValue)
+    }
+}
+
+private fun expectedHourlyRevenuePeriods(hoursBack: Int): List<IngresosPeriodo> {
+    val now = Calendar.getInstance()
+    return ((hoursBack - 1) downTo 0).map { hoursAgo ->
+        Calendar.getInstance().apply {
+            timeInMillis = now.timeInMillis
+            add(Calendar.HOUR_OF_DAY, -hoursAgo)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.toEmptyRevenuePeriod(PeriodoIngresos.DIARIO)
+    }
+}
+
+private fun expectedDailyRevenuePeriods(daysBack: Int, periodo: PeriodoIngresos): List<IngresosPeriodo> {
+    val today = Calendar.getInstance()
+    return ((daysBack - 1) downTo 0).map { daysAgo ->
+        Calendar.getInstance().apply {
+            timeInMillis = today.timeInMillis
+            add(Calendar.DAY_OF_YEAR, -daysAgo)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.toEmptyRevenuePeriod(periodo)
+    }
+}
+
+private fun expectedMonthlyRevenuePeriods(monthsBack: Int): List<IngresosPeriodo> {
+    val currentMonth = Calendar.getInstance()
+    return ((monthsBack - 1) downTo 0).map { monthsAgo ->
+        Calendar.getInstance().apply {
+            timeInMillis = currentMonth.timeInMillis
+            add(Calendar.MONTH, -monthsAgo)
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.toEmptyRevenuePeriod(PeriodoIngresos.ANUAL)
+    }
+}
+
+private fun Calendar.toEmptyRevenuePeriod(periodo: PeriodoIngresos): IngresosPeriodo {
+    return IngresosPeriodo(
+        periodo = when (periodo) {
+            PeriodoIngresos.DIARIO -> SimpleDateFormat("yyyy-MM-dd'T'HH:00:00", Locale.US).format(time)
+            PeriodoIngresos.SEMANAL, PeriodoIngresos.MENSUAL -> SimpleDateFormat("yyyy-MM-dd", Locale.US).format(time)
+            PeriodoIngresos.ANUAL -> SimpleDateFormat("yyyy-MM-01", Locale.US).format(time)
+        },
+        label = revenueLabel(periodo),
+        totalVentas = 0,
+        ingresos = 0.0
+    )
+}
+
+private fun Calendar.revenueLabel(periodo: PeriodoIngresos): String {
+    return when (periodo) {
+        PeriodoIngresos.DIARIO -> SimpleDateFormat("HH:00", Locale.US).format(time)
+        PeriodoIngresos.SEMANAL -> shortDayLabel()
+        PeriodoIngresos.MENSUAL -> SimpleDateFormat("dd MMM", spanishMexicoLocale).format(time).capitalizeFirst()
+        PeriodoIngresos.ANUAL -> SimpleDateFormat("MMM yyyy", spanishMexicoLocale).format(time).capitalizeFirst()
+    }
+}
+
+private fun IngresosPeriodo.revenueKey(periodo: PeriodoIngresos): String? {
+    val millis = this.periodo.toMillisOrNull() ?: return null
+    val calendar = Calendar.getInstance().apply { timeInMillis = millis }
+    return when (periodo) {
+        PeriodoIngresos.DIARIO -> "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.DAY_OF_YEAR)}-${calendar.get(Calendar.HOUR_OF_DAY)}"
+        PeriodoIngresos.SEMANAL, PeriodoIngresos.MENSUAL -> "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.DAY_OF_YEAR)}"
+        PeriodoIngresos.ANUAL -> "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
+    }
+}
+
+private fun String.normalizedLabel(): String {
+    return trim().lowercase(spanishMexicoLocale)
+}
+
+private fun String.capitalizeFirst(): String {
+    return replaceFirstChar { char ->
+        if (char.isLowerCase()) char.titlecase(spanishMexicoLocale) else char.toString()
+    }
+}
 
 private fun buildUserRegistrationSummary(users: List<AdminUserRow>): UserRegistrationSummary {
     val today = Calendar.getInstance()
